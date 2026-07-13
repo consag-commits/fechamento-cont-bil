@@ -185,6 +185,8 @@ def item_set(request, status_id):
     novo = request.POST.get("status")
     if novo not in ItemStatus.Status.values:
         novo = _PEND
+    if request.POST.get("toggle") == "1" and s.status == novo:
+        novo = _PEND
     s.status = novo
     if novo == _DONE:
         s.data = parse_date(request.POST.get("data") or "") or timezone.localdate()
