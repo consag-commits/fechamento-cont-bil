@@ -10,7 +10,8 @@ dependencies = [
     "python-dotenv>=1.0",
     "gunicorn>=23.0",
     "whitenoise>=6.7",
-    "mssql-django>=1.5",
+    "psycopg[binary]>=3.2",
+    "dj-database-url>=2.3",
 ]
 
 [dependency-groups]

@@ -97,22 +97,13 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-# Local (sem DB_ENGINE definido): sqlite. Produção (Railway): DB_ENGINE=mssql.
+# Local (sem DATABASE_URL definida): sqlite. Produção (Railway): Postgres via DATABASE_URL.
 
-if os.environ.get('DB_ENGINE') == 'mssql':
+import dj_database_url  # noqa: E402
+
+if os.environ.get('DATABASE_URL'):
     DATABASES = {
-        'default': {
-            'ENGINE': 'mssql',
-            'NAME': os.environ['DB_NAME'],
-            'USER': os.environ['DB_USER'],
-            'PASSWORD': os.environ['DB_PASSWORD'],
-            'HOST': os.environ['DB_HOST'],
-            'PORT': os.environ.get('DB_PORT', '1433'),
-            'OPTIONS': {
-                'driver': 'ODBC Driver 18 for SQL Server',
-                'extra_params': 'TrustServerCertificate=yes',
-            },
-        }
+        'default': dj_database_url.parse(os.environ['DATABASE_URL'], conn_max_age=600),
     }
 else:
     DATABASES = {
