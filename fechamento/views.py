@@ -26,14 +26,23 @@ from .services import (
 
 
 def _equipe_ctx(request):
-    """Contexto do filtro de equipe (dropdown só aparece para gestor)."""
+    """Contexto do filtro de equipe (dropdown só aparece para gestor).
+    Sem parâmetro na URL, gestor de uma única equipe vê essa equipe por
+    padrão — mas o dropdown (inclusive "Todas") continua disponível."""
     if not is_gestor(request.user):
         return {"pode_filtrar": False, "equipe_sel": None, "equipes_filtro": []}
-    valor = request.GET.get("equipe") or None
-    try:
-        equipe_sel = int(valor) if valor else None
-    except (ValueError, TypeError):
-        equipe_sel = None
+
+    if "equipe" in request.GET:
+        valor = request.GET.get("equipe") or None
+        try:
+            equipe_sel = int(valor) if valor else None
+        except (ValueError, TypeError):
+            equipe_sel = None
+    else:
+        perfil = getattr(request.user, "perfil", None)
+        equipes_proprias = list(perfil.equipes.values_list("id", flat=True)) if perfil else []
+        equipe_sel = equipes_proprias[0] if len(equipes_proprias) == 1 else None
+
     return {"pode_filtrar": True, "equipe_sel": equipe_sel, "equipes_filtro": list(Equipe.objects.all())}
 
 _PEND = ItemStatus.Status.PENDENTE
