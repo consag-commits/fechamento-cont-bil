@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{% if novo %}Nova equipe{% else %}Editar equipe{% endif %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'equipes_list' %}">Equipes</a></li>
+    <li class="breadcrumb-item active">{% if novo %}Nova{% else %}{{ equipe.nome }}{% endif %}</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">{% if novo %}Nova equipe{% else %}Editar equipe{% endif %}</h5>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label small" for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+            {{ form.nome }}
+            {% for erro in form.nome.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'equipes_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+
+        {% if not novo %}
+        <hr class="my-4">
+        <label class="form-label small d-block mb-2">Usuários desta equipe</label>
+        {% include "fechamento/gestao/_equipe_membros.html" %}
+        <div class="form-text mt-2">Operadores marcados só veem as empresas desta equipe.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

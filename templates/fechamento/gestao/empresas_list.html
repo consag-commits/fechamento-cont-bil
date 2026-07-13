@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Empresas{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item active">Empresas</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0">Empresas</h4>
+    <span class="text-muted small">{{ total }} cadastrada{{ total|pluralize }} · {{ ativas }} ativa{{ ativas|pluralize }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    <form method="get" class="d-flex" role="search">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar empresa…">
+      </div>
+    </form>
+    <a href="{% url 'empresa_criar' %}" class="btn btn-primary btn-sm text-nowrap">
+      <i class="bi bi-plus-lg"></i> Nova empresa
+    </a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Razão social</th>
+          <th style="width: 220px;">Equipe padrão</th>
+          <th style="width: 110px;">Situação</th>
+          <th style="width: 90px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in empresas %}
+        <tr>
+          <td class="fw-semibold">
+            {{ e.razao_social }}
+            {% if e.cnpj %}<div class="text-muted small">{{ e.cnpj }}</div>{% endif %}
+          </td>
+          <td>
+            <select class="form-select form-select-sm"
+                    name="equipe"
+                    hx-post="{% url 'empresa_set_equipe' e.id %}"
+                    hx-trigger="change"
+                    hx-swap="none">
+              <option value="">— sem equipe —</option>
+              {% for eq in equipes %}
+              <option value="{{ eq.id }}" {% if e.equipe_id == eq.id %}selected{% endif %}>{{ eq.nome }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          {% include "fechamento/gestao/_empresa_ativa.html" with e=e %}
+          <td><a href="{% url 'empresa_editar' e.id %}" class="btn btn-sm btn-outline-primary py-0">Editar</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted py-3">
+          {% if q %}Nenhuma empresa encontrada para “{{ q }}”.{% else %}Nenhuma empresa cadastrada.{% endif %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

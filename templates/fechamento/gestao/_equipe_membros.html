@@ -1,0 +1,29 @@
+<div id="membros-equipe">
+  <div class="d-flex flex-wrap gap-2 mb-2">
+    {% for m in membros %}
+    <span class="d-inline-flex align-items-center gap-2 border rounded-pill ps-3 pe-2 py-1 bg-light">
+      <span class="small">{{ m.rotulo }}</span>
+      <button type="button" class="btn-close" style="font-size: .6rem;" aria-label="Remover {{ m.user.first_name|default:m.user.username }} da equipe"
+              hx-post="{% url 'equipe_membro_remover' equipe.id m.user.id %}"
+              hx-target="#membros-equipe" hx-swap="outerHTML"></button>
+    </span>
+    {% empty %}
+    <span class="text-muted small">Nenhum usuário nesta equipe ainda.</span>
+    {% endfor %}
+  </div>
+
+  {% if disponiveis %}
+  <form class="d-flex gap-2" hx-post="{% url 'equipe_membro_adicionar' equipe.id %}"
+        hx-target="#membros-equipe" hx-swap="outerHTML">
+    <select name="user_id" class="form-select form-select-sm" style="max-width: 260px;" required>
+      <option value="">Selecionar usuário…</option>
+      {% for d in disponiveis %}<option value="{{ d.user.id }}">{{ d.rotulo }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-sm btn-outline-primary" title="Adicionar à equipe">
+      <i class="bi bi-plus-lg"></i>
+    </button>
+  </form>
+  {% else %}
+  <div class="text-muted small">Todos os usuários já estão nesta equipe.</div>
+  {% endif %}
+</div>

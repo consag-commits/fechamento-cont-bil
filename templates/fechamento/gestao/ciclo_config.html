@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load fechamento_extras %}
+
+{% block title %}{{ ciclo.competencia_display }} — Configuração{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'ciclos_list' %}">Ciclos</a></li>
+    <li class="breadcrumb-item active">{{ ciclo.competencia_display }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+  <h5 class="mb-0">{{ ciclo.competencia_display }}</h5>
+  {% if ciclo.status == "aberto" %}
+    <span class="badge bg-success-subtle text-success border border-success-subtle">Aberto</span>
+  {% else %}
+    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Concluído</span>
+  {% endif %}
+  <div class="ms-auto d-flex gap-2">
+    <a href="{% url 'ciclo_consolidado' ciclo.id %}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-table"></i> Ver consolidado
+    </a>
+    {% if ciclo.status == "aberto" %}
+    <button type="button" class="btn btn-sm btn-outline-danger"
+            data-bs-toggle="modal" data-bs-target="#modalArquivar">
+      <i class="bi bi-archive"></i> Arquivar ciclo
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  {# ── Coluna esquerda: Prazos por fase ── #}
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-calendar-event text-primary"></i>
+        <span class="fw-semibold small">Prazos por fase</span>
+      </div>
+      <div class="card-body p-0" id="prazos-section">
+        {% if ciclo.status == "concluido" %}
+          <p class="small text-muted p-3 mb-0">Ciclo concluído — prazos bloqueados.</p>
+        {% else %}
+          <ul class="list-group list-group-flush">
+            {% for f in fases %}
+              {% with prazo=prazos|dictkey:f.id %}
+              <li class="list-group-item" id="prazo-row-{{ f.id }}">
+                <div class="small fw-semibold mb-1">{{ f.nome }}</div>
+                <form hx-post="{% url 'ciclo_prazo_editar' ciclo.id f.id %}"
+                      hx-target="#prazo-row-{{ f.id }}"
+                      hx-swap="outerHTML"
+                      class="d-flex gap-2 align-items-center">
+                  {% csrf_token %}
+                  <input type="date" name="data_limite" class="form-control form-control-sm"
+                         value="{% if prazo %}{{ prazo.data_limite|date:'Y-m-d' }}{% endif %}"
+                         required style="max-width: 160px;">
+                  <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-check-lg"></i>
+                  </button>
+                </form>
+              </li>
+              {% endwith %}
+            {% empty %}
+              <li class="list-group-item small text-muted">Nenhuma fase cadastrada.</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Coluna direita: Empresas no ciclo ── #}
+  <div class="col-lg-8">
+    <div id="empresas-section">
+      {% include "fechamento/gestao/_ciclo_empresas.html" %}
+    </div>
+  </div>
+</div>
+
+{# ── Modal de arquivamento ── #}
+{% if ciclo.status == "aberto" %}
+<div class="modal fade" id="modalArquivar" tabindex="-1" aria-labelledby="modalArquivarLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="modalArquivarLabel">
+          <i class="bi bi-archive text-danger"></i> Arquivar ciclo
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Marcar <strong>{{ ciclo.competencia_display }}</strong> como <strong>Concluído</strong>?</p>
+        <p class="text-muted small mb-0">
+          Após arquivado, não será possível editar prazos nem adicionar/remover empresas.
+          Esta ação é <strong>irreversível</strong>.
+        </p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" action="{% url 'ciclo_arquivar' ciclo.id %}" class="m-0">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-sm">
+            <i class="bi bi-archive"></i> Confirmar arquivamento
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

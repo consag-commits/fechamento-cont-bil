@@ -1,0 +1,19 @@
+[project]
+name = "projeto-chamado-aut"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1",
+    "django-htmx>=1.19",
+    "python-dotenv>=1.0",
+    "gunicorn>=23.0",
+    "whitenoise>=6.7",
+    "mssql-django>=1.5",
+]
+
+[dependency-groups]
+dev = [
+    "openpyxl>=3.1.5",
+]

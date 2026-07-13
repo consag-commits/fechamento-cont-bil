@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load fechamento_extras %}
+
+{% block title %}Abrir ciclo{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item active">Abrir ciclo</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-1">Abrir fechamento</h5>
+        <p class="text-muted small">Gera o checklist de cada empresa ativa, distribuído pela equipe padrão.</p>
+
+        {% if empresas_ativas == 0 %}
+        <div class="alert alert-warning py-2 small">
+          Nenhuma empresa ativa cadastrada. <a href="{% url 'empresas_list' %}">Cadastre empresas</a> antes de abrir um ciclo.
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label small" for="referencia">Competência (mês contábil a fechar)</label>
+            <input type="month" name="referencia" id="referencia" class="form-control"
+                   value="{{ referencia }}" required>
+            <div class="form-text">O trabalho ocorre no mês seguinte — os prazos abaixo já vêm sugeridos nele.</div>
+          </div>
+
+          {% if fases %}
+          <label class="form-label small">Prazos por fase (mês de trabalho)</label>
+          <div class="border rounded p-2 mb-3">
+            {% for f in fases %}
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+              <span class="small">{{ f.nome }}</span>
+              <input type="date" name="prazo_{{ f.id }}" id="prazo_{{ f.id }}"
+                     data-dia="{{ f.prazo_offset_dias }}" class="form-control form-control-sm prazo-fase"
+                     style="width: 175px;" value="{{ prazos_form|dictkey:f.id }}">
+            </div>
+            {% endfor %}
+            <div class="form-text">Ajuste cada prazo se necessário. Vazio = usa a sugestão.</div>
+          </div>
+          {% endif %}
+
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle"></i>
+            Serão criados <strong>{{ empresas_ativas }}</strong> processo{{ empresas_ativas|pluralize }}
+            (um por empresa ativa).
+            {% if sem_equipe %}<br><i class="bi bi-exclamation-triangle text-warning"></i>
+            {{ sem_equipe }} empresa{{ sem_equipe|pluralize }} sem equipe padrão — entrará no ciclo sem equipe atribuída.{% endif %}
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" {% if empresas_ativas == 0 %}disabled{% endif %}>
+              <i class="bi bi-calendar-check"></i> Abrir ciclo
+            </button>
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var comp = document.getElementById('referencia');
+  if (!comp) return;
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function preencherPrazos() {
+    var v = comp.value;                 // "AAAA-MM"
+    if (!v) return;
+    var parts = v.split('-');
+    var ano = parseInt(parts[0], 10), mes = parseInt(parts[1], 10);
+    var tMes = mes + 1, tAno = ano;     // mês de trabalho = competência + 1
+    if (tMes > 12) { tMes = 1; tAno += 1; }
+    var ultimo = new Date(tAno, tMes, 0).getDate();
+    document.querySelectorAll('.prazo-fase').forEach(function (inp) {
+      if (inp.value) return;            // não sobrescreve o que o usuário digitou
+      var dia = Math.min(parseInt(inp.dataset.dia || '10', 10) || 10, ultimo);
+      inp.value = tAno + '-' + pad(tMes) + '-' + pad(dia);
+    });
+  }
+  comp.addEventListener('change', preencherPrazos);
+  if (comp.value) preencherPrazos();
+})();
+</script>
+{% endblock %}

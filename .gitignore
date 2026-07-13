@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Django
+db.sqlite3
+*.log
+/staticfiles/
+
+# Ambiente e segredos
+.env
+_ja.txt
+_jo.txt
+*.cookies
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

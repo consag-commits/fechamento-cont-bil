@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Gestão{% endblock %}
+
+{% block content %}
+<h4 class="mb-3">Gestão</h4>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <a href="{% url 'usuarios_list' %}" class="text-decoration-none">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-people text-primary"></i> Usuários</h5>
+          <p class="card-text text-muted small mb-0">Cadastrar funcionários e definir papéis (operador / gestor).</p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'empresas_list' %}" class="text-decoration-none">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-building text-primary"></i> Empresas</h5>
+          <p class="card-text text-muted small mb-0">Cadastro de empresas e distribuição por equipe.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'equipes_list' %}" class="text-decoration-none">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-people-fill text-primary"></i> Equipes</h5>
+          <p class="card-text text-muted small mb-0">Cadastro das equipes de trabalho.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'ciclo_abrir' %}" class="text-decoration-none">
+      <div class="card shadow-sm h-100 border-primary">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-calendar-plus text-primary"></i> Abrir ciclo</h5>
+          <p class="card-text text-muted small mb-0">Abrir o fechamento do mês e gerar os checklists.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a href="{% url 'ciclos_list' %}" class="text-decoration-none">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title"><i class="bi bi-gear text-primary"></i> Configuração de Ciclos</h5>
+          <p class="card-text text-muted small mb-0">Gerenciar prazos e empresas de ciclos já abertos.</p>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Ciclos — Gestão{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item active">Ciclos</li>
+  </ol>
+</nav>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h5 class="mb-0">Ciclos de fechamento</h5>
+  <a href="{% url 'ciclo_abrir' %}" class="btn btn-sm btn-primary">
+    <i class="bi bi-calendar-plus"></i> Abrir novo ciclo
+  </a>
+</div>
+
+{% if not dados %}
+<div class="alert alert-info small">Nenhum ciclo cadastrado ainda.</div>
+{% else %}
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light small">
+        <tr>
+          <th>Competência</th>
+          <th>Status</th>
+          <th class="text-center">Empresas</th>
+          <th>Progresso</th>
+          <th class="text-center">Pendências</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dados %}
+        <tr>
+          <td class="fw-semibold">{{ d.ciclo.competencia_display }}</td>
+          <td>
+            {% if d.ciclo.status == "aberto" %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">Aberto</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Concluído</span>
+            {% endif %}
+          </td>
+          <td class="text-center">{{ d.empresas }}</td>
+          <td style="min-width: 150px;">
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1" style="height: 6px;">
+                <div class="progress-bar {% if d.percentual == 1.0 %}bg-success{% elif d.pendencias > 0 %}bg-primary{% else %}bg-secondary{% endif %}"
+                     style="width: {{ d.percentual|floatformat:2 }}%"
+                     role="progressbar"></div>
+              </div>
+              <span class="small text-muted" style="min-width: 38px;">{{ d.percentual|floatformat:0 }}%</span>
+            </div>
+          </td>
+          <td class="text-center">
+            {% if d.pendencias > 0 %}
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">{{ d.pendencias }}</span>
+            {% else %}
+              <span class="text-success small"><i class="bi bi-check-circle-fill"></i></span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'ciclo_config' d.ciclo.id %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-gear"></i> Configurar
+            </a>
+            <a href="{% url 'ciclo_consolidado' d.ciclo.id %}" class="btn btn-sm btn-outline-primary ms-1">
+              <i class="bi bi-table"></i> Ver
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

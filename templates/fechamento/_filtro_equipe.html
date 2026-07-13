@@ -1,0 +1,11 @@
+{% if pode_filtrar %}
+<form method="get" class="d-flex align-items-center gap-2 mb-3">
+  <label class="small text-muted mb-0"><i class="bi bi-people"></i> Equipe:</label>
+  <select name="equipe" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+    <option value="">Todas (consolidada)</option>
+    {% for e in equipes_filtro %}
+    <option value="{{ e.id }}" {% if equipe_sel == e.id %}selected{% endif %}>{{ e.nome }}</option>
+    {% endfor %}
+  </select>
+</form>
+{% endif %}

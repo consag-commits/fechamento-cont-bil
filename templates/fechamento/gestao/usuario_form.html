@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{% if novo %}Novo usuário{% else %}Editar usuário{% endif %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'usuarios_list' %}">Usuários</a></li>
+    <li class="breadcrumb-item active">{% if novo %}Novo{% else %}{{ usuario.username }}{% endif %}</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">{% if novo %}Novo usuário{% else %}Editar {{ usuario.first_name|default:usuario.username }}{% endif %}</h5>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% for field in form %}
+          <div class="mb-3">
+            {% if field.name == 'equipes' %}
+              <label class="form-label small">{{ field.label }}</label>
+              {% for cb in field %}
+              <div class="form-check">
+                {{ cb.tag }}
+                <label class="form-check-label small" for="{{ cb.id_for_label }}">{{ cb.choice_label }}</label>
+              </div>
+              {% endfor %}
+            {% elif field.field.widget.input_type == 'checkbox' %}
+              <div class="form-check">
+                <input type="checkbox" name="{{ field.name }}" class="form-check-input"
+                       id="id_{{ field.name }}" {% if field.value %}checked{% endif %}>
+                <label class="form-check-label" for="id_{{ field.name }}">{{ field.label }}</label>
+              </div>
+            {% else %}
+              <label class="form-label small" for="id_{{ field.name }}">{{ field.label }}</label>
+              {% if field.name == 'papel' %}
+                <select name="papel" class="form-select" id="id_papel">
+                  {% for value, texto in field.field.choices %}
+                  <option value="{{ value }}" {% if field.value|stringformat:'s' == value %}selected{% endif %}>{{ texto }}</option>
+                  {% endfor %}
+                </select>
+              {% elif field.field.widget.input_type == 'password' %}
+                <div class="input-group">
+                  <input type="password" name="{{ field.name }}"
+                         class="form-control" id="id_{{ field.name }}">
+                  <button type="button" class="btn btn-outline-secondary toggle-senha"
+                          data-target="id_{{ field.name }}" tabindex="-1" aria-label="Mostrar senha">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              {% else %}
+                <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}"
+                       class="form-control" id="id_{{ field.name }}"
+                       value="{{ field.value|default:'' }}">
+              {% endif %}
+            {% endif %}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for erro in field.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+          </div>
+          {% endfor %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'usuarios_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.toggle-senha').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var input = document.getElementById(btn.dataset.target);
+    var icon = btn.querySelector('i');
+    var mostrar = input.type === 'password';
+    input.type = mostrar ? 'text' : 'password';
+    icon.classList.toggle('bi-eye', !mostrar);
+    icon.classList.toggle('bi-eye-slash', mostrar);
+    btn.setAttribute('aria-label', mostrar ? 'Ocultar senha' : 'Mostrar senha');
+  });
+});
+</script>
+{% endblock %}

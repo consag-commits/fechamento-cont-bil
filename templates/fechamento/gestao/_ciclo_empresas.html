@@ -1,0 +1,109 @@
+{# Fragmento htmx: tabela de empresas do ciclo + formulário de adição #}
+<div class="card shadow-sm">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-building text-primary"></i>
+    <span class="fw-semibold small">Empresas no ciclo</span>
+    <span class="badge bg-primary-subtle text-primary ms-1">{{ proc_data|length }}</span>
+  </div>
+
+  {% if ciclo.status == "aberto" %}
+  <div class="card-body border-bottom py-2 px-3">
+    <form hx-post="{% url 'ciclo_empresa_adicionar' ciclo.id %}"
+          hx-target="#empresas-section"
+          hx-swap="innerHTML"
+          class="d-flex gap-2 align-items-center flex-wrap">
+      {% csrf_token %}
+      <label class="small text-muted mb-0 me-1">Adicionar empresa:</label>
+      <select name="empresa_id" class="form-select form-select-sm" style="max-width: 320px;" required>
+        <option value="">— selecione —</option>
+        {% for e in empresas_disponiveis %}
+          <option value="{{ e.id }}">{{ e.razao_social }}</option>
+        {% empty %}
+          <option disabled>Todas as empresas ativas já estão no ciclo</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-sm btn-primary"
+              {% if not empresas_disponiveis %}disabled{% endif %}>
+        <i class="bi bi-plus-lg"></i> Adicionar
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light small">
+        <tr>
+          <th>Empresa</th>
+          <th>Equipe</th>
+          <th class="text-center">Progresso</th>
+          {% if ciclo.status == "aberto" %}<th></th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in proc_data %}
+        <tr>
+          <td>
+            <a href="{% url 'processo_matriz' d.processo.id %}" class="text-decoration-none small fw-semibold">
+              {{ d.processo.empresa.razao_social }}
+            </a>
+          </td>
+          <td>
+            {% if ciclo.status == "aberto" %}
+            <select class="form-select form-select-sm"
+                    style="min-width: 130px;"
+                    hx-post="{% url 'ciclo_processo_set_equipe' ciclo.id d.processo.id %}"
+                    hx-target="#empresas-section"
+                    hx-swap="innerHTML"
+                    hx-trigger="change"
+                    name="equipe">
+              <option value="">— sem equipe —</option>
+              {% for eq in equipes %}
+                <option value="{{ eq.id }}"
+                  {% if d.processo.equipe_id == eq.id %}selected{% endif %}>
+                  {{ eq.nome }}
+                </option>
+              {% endfor %}
+            </select>
+            {% else %}
+              <span class="small text-muted">{{ d.processo.equipe.nome|default:"—" }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if d.total > 0 %}
+              <span class="small">{{ d.concluidos }}/{{ d.total }}</span>
+              <div class="progress mx-auto" style="height:4px; width:60px;">
+                <div class="progress-bar {% if d.concluidos == d.total %}bg-success{% else %}bg-primary{% endif %}"
+                     style="width: {% widthratio d.concluidos d.total 100 %}%"></div>
+              </div>
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          {% if ciclo.status == "aberto" %}
+          <td class="text-end">
+            {% if d.removivel %}
+            <button class="btn btn-sm btn-outline-danger"
+                    hx-post="{% url 'ciclo_empresa_remover' ciclo.id d.processo.id %}"
+                    hx-target="#empresas-section"
+                    hx-swap="innerHTML"
+                    hx-confirm="Remover {{ d.processo.empresa.razao_social }} deste ciclo?">
+              <i class="bi bi-x-lg"></i>
+            </button>
+            {% else %}
+            <span class="text-muted small" title="Tem itens concluídos — não pode remover">
+              <i class="bi bi-lock"></i>
+            </span>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-center text-muted small py-3">Nenhuma empresa neste ciclo.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

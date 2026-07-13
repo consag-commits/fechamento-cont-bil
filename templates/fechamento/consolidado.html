@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Fechamento {{ ciclo.competencia_display }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Ciclos</a></li>
+    <li class="breadcrumb-item active">{{ ciclo.competencia_display }}</li>
+  </ol>
+</nav>
+
+<h4 class="mb-3">Fechamento {{ ciclo.competencia_display }}</h4>
+
+{% include "fechamento/_filtro_equipe.html" %}
+
+<div class="row g-2 mb-4">
+  {% include "fechamento/_stat.html" with rotulo="Empresas" valor=resumo.empresas cor="secondary" %}
+  {% include "fechamento/_stat.html" with rotulo="Concluídas" valor=resumo.concluidas cor="success" %}
+  {% include "fechamento/_stat.html" with rotulo="Pendente de início" valor=resumo.pendentes cor="secondary" %}
+  {% include "fechamento/_stat.html" with rotulo="Em andamento" valor=resumo.em_andamento cor="info" %}
+  {% include "fechamento/_stat.html" with rotulo="Atrasadas" valor=resumo.atrasadas cor="danger" %}
+  {% include "fechamento/_stat.html" with rotulo="Pendências" valor=resumo.pendencias cor="warning" %}
+  {% include "fechamento/_stat.html" with rotulo="Atrasos" valor=resumo.atrasos cor="danger" %}
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="min-width: 200px;">Empresa</th>
+          <th>Equipe</th>
+          {% for f in fases %}<th class="text-center">{{ f.nome }}</th>{% endfor %}
+          <th class="text-center">Geral</th>
+          <th class="text-center">Pend.</th>
+          <th class="text-center">Atr.</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in linhas %}
+        <tr>
+          <td class="fw-semibold">{{ l.processo.empresa.razao_social }}</td>
+          <td class="text-muted small">{{ l.processo.equipe.nome|default:"—" }}</td>
+          {% for lf in l.resumo.fases %}
+          <td class="text-center small {% if lf.atrasada %}text-danger fw-semibold{% endif %}">
+            {% if lf.total %}{% widthratio lf.pct 1 100 %}%{% else %}<span class="text-muted">N/A</span>{% endif %}
+          </td>
+          {% endfor %}
+          <td class="text-center">
+            <span class="badge bg-light text-dark border">{% widthratio l.resumo.percentual 1 100 %}%</span>
+          </td>
+          <td class="text-center">{{ l.resumo.pendencias }}</td>
+          <td class="text-center">{% if l.resumo.atrasos %}<span class="text-danger fw-semibold">{{ l.resumo.atrasos }}</span>{% else %}0{% endif %}</td>
+          <td class="text-nowrap">
+            {% if l.resumo.status_geral == 'Concluído' %}<span class="badge bg-success">{{ l.resumo.status_geral }}</span>
+            {% elif l.resumo.status_geral == 'Atrasado' %}<span class="badge bg-danger">{{ l.resumo.status_geral }}</span>
+            {% elif l.resumo.status_geral == 'Em andamento' %}<span class="badge bg-info text-dark">{{ l.resumo.status_geral }}</span>
+            {% else %}<span class="badge bg-secondary">{{ l.resumo.status_geral }}</span>{% endif %}
+          </td>
+          <td><a href="{% url 'processo_matriz' l.processo.id %}" class="btn btn-sm btn-outline-primary py-0 text-nowrap">Checklist</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

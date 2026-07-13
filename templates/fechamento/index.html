@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Ciclos de fechamento</h4>
+  {% if is_gestor %}
+  <a href="{% url 'ciclo_abrir' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg"></i> Novo ciclo
+  </a>
+  {% endif %}
+</div>
+
+{% if dados %}
+<div class="row g-3">
+  {% for d in dados %}
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <h5 class="card-title mb-1">{{ d.ciclo.competencia_display }}</h5>
+          <span class="badge {% if d.ciclo.status == 'concluido' %}bg-success{% else %}bg-info text-dark{% endif %}">
+            {{ d.ciclo.get_status_display }}
+          </span>
+        </div>
+        <p class="text-muted small mb-2">{{ d.empresas }} empresa{{ d.empresas|pluralize }} · {{ d.pendencias }} pendência{{ d.pendencias|pluralize }}</p>
+        <div class="progress mb-2" style="height: 8px;">
+          <div class="progress-bar bg-success" style="width: {% widthratio d.percentual 1 100 %}%"></div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small fw-semibold">{% widthratio d.percentual 1 100 %}%</span>
+          <a href="{% url 'ciclo_consolidado' d.ciclo.id %}" class="btn btn-sm btn-outline-primary">Abrir</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+  Nenhum ciclo aberto ainda. Rode <code>uv run python manage.py abrir_ciclo 2026-06</code> ou crie um pelo botão acima.
+</div>
+{% endif %}
+{% endblock %}

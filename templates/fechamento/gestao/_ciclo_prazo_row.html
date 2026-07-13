@@ -1,0 +1,19 @@
+{# Fragmento htmx: uma linha de prazo (repintada após salvar) #}
+<li class="list-group-item" id="prazo-row-{{ prazo.fase.id }}">
+  <div class="small fw-semibold mb-1">{{ prazo.fase.nome }}</div>
+  <form hx-post="{% url 'ciclo_prazo_editar' ciclo.id prazo.fase.id %}"
+        hx-target="#prazo-row-{{ prazo.fase.id }}"
+        hx-swap="outerHTML"
+        class="d-flex gap-2 align-items-center">
+    {% csrf_token %}
+    <input type="date" name="data_limite" class="form-control form-control-sm"
+           value="{{ prazo.data_limite|date:'Y-m-d' }}"
+           required style="max-width: 160px;">
+    <button type="submit" class="btn btn-sm btn-outline-success">
+      <i class="bi bi-check-lg"></i>
+    </button>
+  </form>
+  <div class="text-success small mt-1">
+    <i class="bi bi-check-circle-fill"></i> Prazo salvo: {{ prazo.data_limite|date:"d/m/Y" }}
+  </div>
+</li>

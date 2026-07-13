@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{% if novo %}Nova empresa{% else %}Editar empresa{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'empresas_list' %}">Empresas</a></li>
+    <li class="breadcrumb-item active">{% if novo %}Nova{% else %}{{ empresa.razao_social }}{% endif %}</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">{% if novo %}Nova empresa{% else %}Editar empresa{% endif %}</h5>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if novo %}
+          <div class="mb-3">
+            <label class="form-label small" for="catalogo">Buscar no catálogo (Omie)</label>
+            <select id="catalogo" placeholder="Digite a razão social ou o CNPJ…"></select>
+            <div class="form-text">Escolha para preencher automaticamente — ou digite manualmente abaixo.</div>
+          </div>
+          <hr class="text-muted">
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label small" for="{{ form.razao_social.id_for_label }}">{{ form.razao_social.label }}</label>
+            {{ form.razao_social }}
+            {% for erro in form.razao_social.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small" for="{{ form.cnpj.id_for_label }}">{{ form.cnpj.label }}</label>
+            {{ form.cnpj }}
+            {% for erro in form.cnpj.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small" for="{{ form.equipe.id_for_label }}">{{ form.equipe.label }}</label>
+            {{ form.equipe }}
+            {% for erro in form.equipe.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-3 form-check">
+            {{ form.ativa }}
+            <label class="form-check-label" for="{{ form.ativa.id_for_label }}">{{ form.ativa.label }}</label>
+          </div>
+
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'empresas_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if novo %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+(function () {
+  var sel = document.getElementById('catalogo');
+  if (!sel) return;
+  fetch("{% url 'empresas_catalogo_json' %}")
+    .then(function (r) { return r.json(); })
+    .then(function (dados) {
+      var ts = new TomSelect(sel, {
+        valueField: 'id',
+        labelField: 'razao_social',
+        searchField: ['razao_social', 'cnpj'],
+        maxItems: 1,
+        maxOptions: 50,
+        options: dados,
+        render: {
+          option: function (d, escape) {
+            return '<div style="padding:2px 0;">' +
+              '<div style="font-weight:600;">' + escape(d.razao_social) + '</div>' +
+              '<div style="font-size:.75rem;color:#94a3b8;">' + escape(d.cnpj || '') + '</div></div>';
+          }
+        }
+      });
+      ts.on('change', function (value) {
+        var opt = ts.options[value];
+        if (!opt) return;
+        document.getElementById('{{ form.razao_social.id_for_label }}').value = opt.razao_social || '';
+        document.getElementById('{{ form.cnpj.id_for_label }}').value = opt.cnpj || '';
+      });
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}
