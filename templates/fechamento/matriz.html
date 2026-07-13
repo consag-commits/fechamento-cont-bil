@@ -60,4 +60,10 @@
   </div>
 </div>
 {% endfor %}
+
+<div class="d-flex justify-content-end mb-4">
+  <a href="{% url 'ciclo_consolidado' processo.ciclo.id %}" class="btn btn-primary">
+    <i class="bi bi-check2-circle"></i> Salvar e voltar ao fechamento
+  </a>
+</div>
 {% endblock %}
