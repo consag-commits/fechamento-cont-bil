@@ -129,9 +129,21 @@ def abrir_ciclo(referencia, modelo=None, prazos=None):
     if Ciclo.objects.filter(modelo=modelo, referencia=referencia).exists():
         raise AberturaError(f"Já existe um ciclo {referencia} para o modelo “{modelo.nome}”.")
 
-    empresas = list(Empresa.objects.filter(ativa=True))
-    if not empresas:
-        raise AberturaError("Nenhuma empresa ativa cadastrada. Cadastre empresas antes de abrir o ciclo.")
+    # Base de empresas: mesmas do ciclo anterior (ainda ativas), se existir.
+    # Sem ciclo anterior, cai no padrão de todas as empresas ativas.
+    anterior = (
+        Ciclo.objects.filter(modelo=modelo, data_referencia__lt=data_ref)
+        .order_by("-data_referencia").first()
+    )
+    if anterior:
+        pares_empresa_equipe = [
+            (p.empresa, p.equipe) for p in
+            anterior.processos.select_related("empresa", "equipe").filter(empresa__ativa=True)
+        ]
+    else:
+        pares_empresa_equipe = [(e, e.equipe) for e in Empresa.objects.filter(ativa=True)]
+        if not pares_empresa_equipe:
+            raise AberturaError("Nenhuma empresa ativa cadastrada. Cadastre empresas antes de abrir o ciclo.")
 
     fases_principais = list(Fase.objects.filter(modelo=modelo, principal=True))
     itens_principais = list(Item.objects.filter(fase__modelo=modelo, fase__principal=True))
@@ -162,7 +174,7 @@ def abrir_ciclo(referencia, modelo=None, prazos=None):
         for fase in fases_principais
     ])
 
-    processos = [Processo(ciclo=ciclo, empresa=e, equipe=e.equipe) for e in empresas]
+    processos = [Processo(ciclo=ciclo, empresa=e, equipe=eq) for e, eq in pares_empresa_equipe]
     Processo.objects.bulk_create(processos)
 
     statuses = []
