@@ -16,13 +16,7 @@
     <div class="card shadow-sm">
       <div class="card-body p-4">
         <h5 class="card-title mb-1">Abrir fechamento</h5>
-        <p class="text-muted small">Gera o checklist de cada empresa ativa, distribuído pela equipe padrão.</p>
-
-        {% if empresas_ativas == 0 %}
-        <div class="alert alert-warning py-2 small">
-          Nenhuma empresa ativa cadastrada. <a href="{% url 'empresas_list' %}">Cadastre empresas</a> antes de abrir um ciclo.
-        </div>
-        {% endif %}
+        <p class="text-muted small">Gera o checklist com as empresas do ciclo anterior (ainda ativas), ou de todas as empresas ativas se não houver ciclo anterior. Ajuste a seleção abaixo se precisar.</p>
 
         <form method="post" novalidate>
           {% csrf_token %}
@@ -30,7 +24,9 @@
           <div class="mb-3">
             <label class="form-label small" for="referencia">Competência (mês contábil a fechar)</label>
             <input type="month" name="referencia" id="referencia" class="form-control"
-                   value="{{ referencia }}" required>
+                   value="{{ referencia }}" required
+                   hx-get="{% url 'ciclo_abrir_preview' %}" hx-trigger="change"
+                   hx-target="#preview-empresas" hx-swap="outerHTML">
             <div class="form-text">O trabalho ocorre no mês seguinte — os prazos abaixo já vêm sugeridos nele.</div>
           </div>
 
@@ -49,16 +45,10 @@
           </div>
           {% endif %}
 
-          <div class="alert alert-info py-2 small mb-3">
-            <i class="bi bi-info-circle"></i>
-            Serão criados <strong>{{ empresas_ativas }}</strong> processo{{ empresas_ativas|pluralize }}
-            (um por empresa ativa).
-            {% if sem_equipe %}<br><i class="bi bi-exclamation-triangle text-warning"></i>
-            {{ sem_equipe }} empresa{{ sem_equipe|pluralize }} sem equipe padrão — entrará no ciclo sem equipe atribuída.{% endif %}
-          </div>
+          {% include "fechamento/gestao/_ciclo_abrir_preview.html" %}
 
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary" {% if empresas_ativas == 0 %}disabled{% endif %}>
+            <button type="submit" id="btn-abrir-ciclo" class="btn btn-primary" {% if total_marcadas == 0 %}disabled{% endif %}>
               <i class="bi bi-calendar-check"></i> Abrir ciclo
             </button>
             <a href="{% url 'index' %}" class="btn btn-outline-secondary">Cancelar</a>
@@ -92,6 +82,33 @@
   }
   comp.addEventListener('change', preencherPrazos);
   if (comp.value) preencherPrazos();
+})();
+
+(function () {
+  function atualizarContagem() {
+    var marcadas = document.querySelectorAll('.empresa-check:checked').length;
+    var span = document.getElementById('contagem-marcadas');
+    if (span) span.textContent = marcadas;
+    var btn = document.getElementById('btn-abrir-ciclo');
+    if (btn) btn.disabled = marcadas === 0;
+  }
+  // Delegação: sobrevive às trocas de #preview-empresas pelo htmx.
+  document.addEventListener('change', function (e) {
+    if (e.target.classList && e.target.classList.contains('empresa-check')) {
+      atualizarContagem();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (e.target.matches('[data-marcar-todas]') || e.target.matches('[data-desmarcar-todas]')) {
+      e.preventDefault();
+      var marcar = e.target.matches('[data-marcar-todas]');
+      document.querySelectorAll('.empresa-check').forEach(function (c) { c.checked = marcar; });
+      atualizarContagem();
+    }
+  });
+  document.body.addEventListener('htmx:afterSwap', function (e) {
+    if (e.detail.target && e.detail.target.id === 'preview-empresas') atualizarContagem();
+  });
 })();
 </script>
 {% endblock %}

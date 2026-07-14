@@ -13,6 +13,7 @@ urlpatterns = [
     # Gestão (restrito a gestores)
     path("gestao/", views.gestao_home, name="gestao_home"),
     path("gestao/ciclos/abrir/", views.ciclo_abrir, name="ciclo_abrir"),
+    path("gestao/ciclos/abrir/preview/", views.ciclo_abrir_preview, name="ciclo_abrir_preview"),
     path("gestao/equipes/", views.equipes_list, name="equipes_list"),
     path("gestao/equipes/nova/", views.equipe_criar, name="equipe_criar"),
     path("gestao/equipes/<int:equipe_id>/editar/", views.equipe_editar, name="equipe_editar"),

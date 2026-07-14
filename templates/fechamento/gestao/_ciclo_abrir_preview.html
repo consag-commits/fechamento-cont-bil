@@ -1,0 +1,43 @@
+<div id="preview-empresas">
+  <label class="form-label small mb-1">
+    Empresas do ciclo
+    {% if anterior %}
+      <span class="text-muted">— pré-marcadas as de {{ anterior.competencia_display }} (ainda ativas); ajuste se precisar</span>
+    {% else %}
+      <span class="text-muted">— nenhum ciclo anterior encontrado, todas as ativas pré-marcadas</span>
+    {% endif %}
+  </label>
+
+  {% if empresas_marcadas %}
+  <div class="border rounded mb-2" style="max-height: 280px; overflow-y: auto;">
+    {% regroup empresas_marcadas by empresa.equipe as grupos_equipe %}
+    {% for grupo in grupos_equipe %}
+    <div class="px-3 pt-2 pb-1 bg-light border-bottom sticky-top">
+      <span class="text-muted text-uppercase small fw-bold">{{ grupo.grouper.nome|default:"Sem equipe" }}</span>
+    </div>
+    {% for item in grupo.list %}
+    <div class="form-check px-3 py-1 border-bottom mb-0">
+      <input class="form-check-input empresa-check" type="checkbox" name="empresa_ids"
+             value="{{ item.empresa.id }}" id="emp-{{ item.empresa.id }}"
+             {% if item.marcada %}checked{% endif %}>
+      <label class="form-check-label small" for="emp-{{ item.empresa.id }}">
+        {{ item.empresa.razao_social }}
+      </label>
+    </div>
+    {% endfor %}
+    {% endfor %}
+  </div>
+  <div class="d-flex justify-content-between align-items-center small text-muted mb-3">
+    <span><strong id="contagem-marcadas">{{ total_marcadas }}</strong> de {{ empresas_ativas }} empresa{{ empresas_ativas|pluralize }} selecionada{{ total_marcadas|pluralize }}</span>
+    <span>
+      <a href="#" class="small" data-marcar-todas>Marcar todas</a>
+      ·
+      <a href="#" class="small" data-desmarcar-todas>Desmarcar todas</a>
+    </span>
+  </div>
+  {% else %}
+  <div class="alert alert-warning py-2 small">
+    Nenhuma empresa ativa cadastrada. <a href="{% url 'empresas_list' %}">Cadastre empresas</a> antes de abrir um ciclo.
+  </div>
+  {% endif %}
+</div>

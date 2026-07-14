@@ -111,12 +111,33 @@ def resolver_modelo(modelo=None):
     return ativo
 
 
+def empresas_para_ciclo(modelo, data_ref):
+    """Empresas (e sua equipe) que entrariam num ciclo de `data_ref`: as do
+    ciclo anterior (ainda ativas), ou todas as ativas se não houver ciclo
+    anterior. Retorna (pares_empresa_equipe, ciclo_anterior)."""
+    anterior = (
+        Ciclo.objects.filter(modelo=modelo, data_referencia__lt=data_ref)
+        .order_by("-data_referencia").first()
+    )
+    if anterior:
+        pares = [
+            (p.empresa, p.equipe) for p in
+            anterior.processos.select_related("empresa", "equipe").filter(empresa__ativa=True)
+        ]
+    else:
+        pares = [(e, e.equipe) for e in Empresa.objects.filter(ativa=True)]
+    return pares, anterior
+
+
 @transaction.atomic
-def abrir_ciclo(referencia, modelo=None, prazos=None):
+def abrir_ciclo(referencia, modelo=None, prazos=None, empresa_ids=None):
     """
     Abre um ciclo de competência AAAA-MM e gera processos + itens pendentes.
     `prazos` = {fase_id: date} — prazos por fase principal; os que faltarem usam
-    a sugestão (mês de trabalho). Retorna (ciclo, qtd_processos, qtd_itens).
+    a sugestão (mês de trabalho). `empresa_ids`, se informado, restringe às
+    empresas escolhidas manualmente (mantendo a equipe do ciclo anterior,
+    quando houver); sem isso, usa a base automática do ciclo anterior.
+    Retorna (ciclo, qtd_processos, qtd_itens).
     """
     try:
         ano, mes = map(int, str(referencia).split("-"))
@@ -129,21 +150,18 @@ def abrir_ciclo(referencia, modelo=None, prazos=None):
     if Ciclo.objects.filter(modelo=modelo, referencia=referencia).exists():
         raise AberturaError(f"Já existe um ciclo {referencia} para o modelo “{modelo.nome}”.")
 
-    # Base de empresas: mesmas do ciclo anterior (ainda ativas), se existir.
-    # Sem ciclo anterior, cai no padrão de todas as empresas ativas.
-    anterior = (
-        Ciclo.objects.filter(modelo=modelo, data_referencia__lt=data_ref)
-        .order_by("-data_referencia").first()
-    )
-    if anterior:
+    pares_empresa_equipe, anterior = empresas_para_ciclo(modelo, data_ref)
+
+    if empresa_ids is not None:
+        equipe_por_empresa = {e.id: eq for e, eq in pares_empresa_equipe}
+        empresas_sel = Empresa.objects.filter(id__in=empresa_ids, ativa=True).select_related("equipe")
         pares_empresa_equipe = [
-            (p.empresa, p.equipe) for p in
-            anterior.processos.select_related("empresa", "equipe").filter(empresa__ativa=True)
+            (e, equipe_por_empresa.get(e.id, e.equipe)) for e in empresas_sel
         ]
-    else:
-        pares_empresa_equipe = [(e, e.equipe) for e in Empresa.objects.filter(ativa=True)]
         if not pares_empresa_equipe:
-            raise AberturaError("Nenhuma empresa ativa cadastrada. Cadastre empresas antes de abrir o ciclo.")
+            raise AberturaError("Selecione ao menos uma empresa para abrir o ciclo.")
+    elif not anterior and not pares_empresa_equipe:
+        raise AberturaError("Nenhuma empresa ativa cadastrada. Cadastre empresas antes de abrir o ciclo.")
 
     fases_principais = list(Fase.objects.filter(modelo=modelo, principal=True))
     itens_principais = list(Item.objects.filter(fase__modelo=modelo, fase__principal=True))

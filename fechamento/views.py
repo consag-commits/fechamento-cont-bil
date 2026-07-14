@@ -1,5 +1,7 @@
 """views.py — Telas do fechamento: lista de ciclos, consolidado e matriz interativa."""
 
+from datetime import date
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -21,7 +23,7 @@ from .permissions import (
 )
 from .services import (
     AberturaError, abrir_ciclo as abrir_ciclo_service, resumo_processo,
-    adicionar_empresa_ciclo, remover_empresa_ciclo,
+    adicionar_empresa_ciclo, remover_empresa_ciclo, empresas_para_ciclo,
 )
 
 
@@ -304,14 +306,62 @@ def equipe_membro_remover(request, equipe_id, user_id):
 
 
 # ── Gestão › Abrir ciclo ──────────────────────────────────────────────────────
+def _parse_referencia(referencia):
+    try:
+        ano, mes = map(int, str(referencia).split("-"))
+        return date(ano, mes, 1)
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def _preview_ciclo_ctx(modelo, referencia, empresa_ids_override=None):
+    """Prévia de empresas para abrir um ciclo dessa competência: todas as
+    empresas ativas, agrupadas por equipe, com as do ciclo anterior
+    pré-marcadas (editável antes de confirmar a abertura).
+    `empresa_ids_override`, se informado, substitui a pré-marcação padrão
+    (usado para reexibir a seleção do usuário em caso de erro no submit)."""
+    data_ref = _parse_referencia(referencia)
+    if modelo and data_ref:
+        pares_default, anterior = empresas_para_ciclo(modelo, data_ref)
+    else:
+        pares_default = [(e, e.equipe) for e in Empresa.objects.filter(ativa=True)]
+        anterior = None
+
+    if empresa_ids_override is not None:
+        ids_marcados = set(empresa_ids_override)
+    else:
+        ids_marcados = {e.id for e, _ in pares_default}
+    todas_ativas = (
+        Empresa.objects.filter(ativa=True).select_related("equipe")
+        .order_by("equipe__nome", "razao_social")
+    )
+    empresas_marcadas = [
+        {"empresa": e, "marcada": e.id in ids_marcados} for e in todas_ativas
+    ]
+    return {
+        "empresas_marcadas": empresas_marcadas,
+        "total_marcadas": len(ids_marcados),
+        "empresas_ativas": len(empresas_marcadas),
+        "anterior": anterior,
+    }
+
+
+@gestor_required
+def ciclo_abrir_preview(request):
+    """htmx: atualiza a prévia de empresas ao digitar a competência."""
+    modelo = ModeloChecklist.objects.filter(ativo=True).order_by("-criado_em").first()
+    contexto = _preview_ciclo_ctx(modelo, request.GET.get("referencia", ""))
+    return render(request, "fechamento/gestao/_ciclo_abrir_preview.html", contexto)
+
+
 @gestor_required
 def ciclo_abrir(request):
     modelo = ModeloChecklist.objects.filter(ativo=True).order_by("-criado_em").first()
     fases = list(Fase.objects.filter(modelo=modelo, principal=True)) if modelo else []
+    referencia = request.POST.get("referencia", "")
     contexto = {
-        "empresas_ativas": Empresa.objects.filter(ativa=True).count(),
-        "sem_equipe": Empresa.objects.filter(ativa=True, equipe__isnull=True).count(),
-        "referencia": request.POST.get("referencia", ""),
+        **_preview_ciclo_ctx(modelo, referencia),
+        "referencia": referencia,
         "fases": fases,
     }
     if request.method == "POST":
@@ -321,10 +371,12 @@ def ciclo_abrir(request):
             d = parse_date(request.POST.get(f"prazo_{f.id}") or "")
             if d:
                 prazos[f.id] = d
-        # devolve os prazos digitados para reexibir em caso de erro
+        empresa_ids = [int(x) for x in request.POST.getlist("empresa_ids") if x.isdigit()]
+        # devolve os prazos e a seleção digitados para reexibir em caso de erro
         contexto["prazos_form"] = {f.id: request.POST.get(f"prazo_{f.id}", "") for f in fases}
+        contexto.update(_preview_ciclo_ctx(modelo, referencia, empresa_ids_override=empresa_ids))
         try:
-            ciclo, n_proc, n_stat = abrir_ciclo_service(referencia, modelo, prazos)
+            ciclo, n_proc, n_stat = abrir_ciclo_service(referencia, modelo, prazos, empresa_ids=empresa_ids)
         except AberturaError as e:
             messages.error(request, str(e))
             return render(request, "fechamento/gestao/ciclo_form.html", contexto)
