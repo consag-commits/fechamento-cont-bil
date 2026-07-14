@@ -10,6 +10,19 @@ urlpatterns = [
     path("processo/<int:processo_id>/", views.processo_matriz, name="processo_matriz"),
     path("item/<int:status_id>/set/", views.item_set, name="item_set"),
 
+    # Indicadores CEIPIM (função independente dos ciclos)
+    path("indicadores-ceipim/", views.indicadores_ceipim, name="indicadores_ceipim"),
+    path("indicadores-ceipim/lote/", views.ceipim_bulk_set, name="ceipim_bulk_set"),
+    path(
+        "indicadores-ceipim/celula/<int:empresa_id>/<int:ano>/<int:mes>/",
+        views.ceipim_set_status, name="ceipim_set_status",
+    ),
+    path("indicadores-ceipim/empresas/adicionar/", views.ceipim_empresa_adicionar, name="ceipim_empresa_adicionar"),
+    path(
+        "indicadores-ceipim/empresas/<int:empresa_id>/remover/",
+        views.ceipim_empresa_remover, name="ceipim_empresa_remover",
+    ),
+
     # Gestão (restrito a gestores)
     path("gestao/", views.gestao_home, name="gestao_home"),
     path("gestao/ciclos/abrir/", views.ciclo_abrir, name="ciclo_abrir"),

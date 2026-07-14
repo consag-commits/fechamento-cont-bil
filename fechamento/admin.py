@@ -4,7 +4,7 @@ from django.contrib import admin
 
 from .models import (
     Equipe, Empresa, ModeloChecklist, Fase, Item, Ciclo, Processo, Perfil,
-    CatalogoEmpresa, CicloPrazo,
+    CatalogoEmpresa, CicloPrazo, IndicadorCeipim,
 )
 
 
@@ -79,3 +79,11 @@ class ProcessoAdmin(admin.ModelAdmin):
     list_filter = ["ciclo", "equipe"]
     search_fields = ["empresa__razao_social"]
     autocomplete_fields = ["empresa", "equipe"]
+
+
+@admin.register(IndicadorCeipim)
+class IndicadorCeipimAdmin(admin.ModelAdmin):
+    list_display = ["empresa", "ano", "mes", "status", "atualizado_em"]
+    list_filter = ["ano", "status"]
+    search_fields = ["empresa__razao_social"]
+    autocomplete_fields = ["empresa"]

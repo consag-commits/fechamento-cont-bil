@@ -80,6 +80,10 @@ class Empresa(models.Model):
         help_text="Equipe que assume esta empresa por padrão a cada ciclo.",
     )
     ativa = models.BooleanField(default=True, help_text="Empresas inativas não entram em novos ciclos.")
+    participa_ceipim = models.BooleanField(
+        "Participa do CEIPIM", default=False,
+        help_text="Entra na lista de Indicadores CEIPIM (função independente dos ciclos).",
+    )
 
     class Meta:
         verbose_name = "Empresa"
@@ -287,3 +291,35 @@ class ItemStatus(models.Model):
 
     def __str__(self):
         return f"{self.processo} · {self.item.nome}: {self.get_status_display()}"
+
+
+# ── Indicadores CEIPIM (função independente dos ciclos) ───────────────────────
+class IndicadorCeipim(models.Model):
+    """Status mensal de entrega do CEIPIM por empresa. Não depende de Ciclo/
+    Processo — só reaproveita o cadastro de Empresa."""
+
+    class Status(models.TextChoices):
+        NA = "na", "N/A"
+        PREVIA = "previa", "Prévia"
+        RETIFICADO = "retificado", "Retificado"
+        DEFINITIVO = "definitivo", "Definitivo"
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="indicadores_ceipim")
+    ano = models.PositiveIntegerField("Ano")
+    mes = models.PositiveSmallIntegerField(
+        "Mês", help_text="0 = indicador anual (coluna do ano anterior); 1-12 = mês específico.",
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NA)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Indicador CEIPIM"
+        verbose_name_plural = "Indicadores CEIPIM"
+        ordering = ["empresa__razao_social", "ano", "mes"]
+        constraints = [
+            models.UniqueConstraint(fields=["empresa", "ano", "mes"], name="uniq_ceipim_empresa_ano_mes"),
+        ]
+
+    def __str__(self):
+        competencia = f"{self.ano}" if self.mes == 0 else f"{self.ano}-{self.mes:02d}"
+        return f"{self.empresa} · {competencia}: {self.get_status_display()}"

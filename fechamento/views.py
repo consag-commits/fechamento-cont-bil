@@ -9,14 +9,15 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Count
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
 from .forms import EmpresaForm, EquipeForm, UsuarioCriarForm, UsuarioEditarForm, nome_papel
 from .models import (
-    CatalogoEmpresa, Ciclo, CicloPrazo, Empresa, Equipe, Fase, ItemStatus,
-    ModeloChecklist, Perfil, Processo,
+    CatalogoEmpresa, Ciclo, CicloPrazo, Empresa, Equipe, Fase, IndicadorCeipim,
+    ItemStatus, ModeloChecklist, Perfil, Processo,
 )
 from .permissions import (
     gestor_required, is_gestor, filtrar_processos, pode_ver_processo,
@@ -633,3 +634,118 @@ def ciclo_arquivar(request, ciclo_id):
         ciclo.save(update_fields=["status"])
         messages.success(request, f"Ciclo {ciclo.competencia_display} arquivado como Concluído.")
     return redirect("ciclo_config", ciclo_id=ciclo.id)
+
+
+# ── Indicadores CEIPIM (função independente dos ciclos — só gestor) ───────────
+def _linhas_ceipim(empresas, ano):
+    """[{'empresa', 'anterior', 'meses': [{'mes','status'}, ...]}] para a
+    tabela: coluna do ano anterior (mes=0) + 12 meses do ano selecionado."""
+    empresa_ids = [e.id for e in empresas]
+    indicadores = IndicadorCeipim.objects.filter(empresa_id__in=empresa_ids, ano__in=[ano - 1, ano])
+    lookup = {(i.empresa_id, i.ano, i.mes): i.status for i in indicadores}
+    linhas = []
+    for e in empresas:
+        linhas.append({
+            "empresa": e,
+            "anterior": lookup.get((e.id, ano - 1, 0), IndicadorCeipim.Status.NA),
+            "meses": [
+                {"mes": m, "status": lookup.get((e.id, ano, m), IndicadorCeipim.Status.NA)}
+                for m in range(1, 13)
+            ],
+        })
+    return linhas
+
+
+def _ceipim_ctx(ano):
+    """Contexto compartilhado pela página e pelos fragmentos htmx de
+    adicionar/remover empresa (mantém a mesma lógica em um só lugar)."""
+    empresas = Empresa.objects.filter(ativa=True, participa_ceipim=True).order_by("razao_social")
+    return {
+        "ano": ano,
+        "linhas": _linhas_ceipim(empresas, ano),
+        "meses": range(1, 13),
+        "status_choices": IndicadorCeipim.Status.choices,
+        "status_dict": dict(IndicadorCeipim.Status.choices),
+        "empresas_disponiveis": (
+            Empresa.objects.filter(ativa=True, participa_ceipim=False).order_by("razao_social")
+        ),
+    }
+
+
+@gestor_required
+def indicadores_ceipim(request):
+    """Tabela de status CEIPIM por empresa x mês (só gestor; não depende de Ciclo/Processo/equipe)."""
+    hoje = timezone.localdate()
+    try:
+        ano = int(request.GET.get("ano", hoje.year))
+    except (ValueError, TypeError):
+        ano = hoje.year
+
+    return render(request, "fechamento/ceipim/indicadores.html", {
+        "anos_disponiveis": [2026],
+        **_ceipim_ctx(ano),
+    })
+
+
+def _ano_do_post(request):
+    valor = request.POST.get("ano", "")
+    return int(valor) if valor.isdigit() else timezone.localdate().year
+
+
+@gestor_required
+@require_POST
+def ceipim_empresa_adicionar(request):
+    """htmx: inclui uma empresa na lista de Indicadores CEIPIM."""
+    empresa = get_object_or_404(Empresa, pk=request.POST.get("empresa_id"), ativa=True)
+    empresa.participa_ceipim = True
+    empresa.save(update_fields=["participa_ceipim"])
+    return render(request, "fechamento/ceipim/_conteudo.html", _ceipim_ctx(_ano_do_post(request)))
+
+
+@gestor_required
+@require_POST
+def ceipim_empresa_remover(request, empresa_id):
+    """htmx: remove uma empresa da lista de Indicadores CEIPIM (não apaga os dados já gravados)."""
+    empresa = get_object_or_404(Empresa, pk=empresa_id)
+    empresa.participa_ceipim = False
+    empresa.save(update_fields=["participa_ceipim"])
+    return render(request, "fechamento/ceipim/_conteudo.html", _ceipim_ctx(_ano_do_post(request)))
+
+
+@gestor_required
+@require_POST
+def ceipim_set_status(request, empresa_id, ano, mes):
+    """htmx: define o status de uma célula (empresa x competência)."""
+    empresa = get_object_or_404(Empresa, pk=empresa_id)
+    novo = request.POST.get("status")
+    if novo not in IndicadorCeipim.Status.values:
+        return HttpResponse("Status inválido.", status=400)
+    indicador, _created = IndicadorCeipim.objects.get_or_create(empresa=empresa, ano=ano, mes=mes)
+    indicador.status = novo
+    indicador.save(update_fields=["status", "atualizado_em"])
+    return HttpResponse(status=204)
+
+
+@gestor_required
+@require_POST
+def ceipim_bulk_set(request):
+    """Aplica um status a várias empresas de uma vez, para uma competência."""
+    ano = request.POST.get("ano", "")
+    mes = request.POST.get("mes", "")
+    status = request.POST.get("status", "")
+    empresa_ids = [int(x) for x in request.POST.getlist("empresa_ids") if x.isdigit()]
+
+    if not (ano.isdigit() and mes.isdigit()) or status not in IndicadorCeipim.Status.values or not empresa_ids:
+        messages.error(request, "Selecione ao menos uma empresa e um status válido.")
+        return redirect(f"{reverse('indicadores_ceipim')}?ano={ano}")
+
+    empresas = Empresa.objects.filter(id__in=empresa_ids)
+    atualizadas = 0
+    for empresa in empresas:
+        indicador, _created = IndicadorCeipim.objects.get_or_create(empresa=empresa, ano=int(ano), mes=int(mes))
+        indicador.status = status
+        indicador.save(update_fields=["status", "atualizado_em"])
+        atualizadas += 1
+
+    messages.success(request, f"{atualizadas} empresa(s) atualizada(s).")
+    return redirect(f"{reverse('indicadores_ceipim')}?ano={ano}")

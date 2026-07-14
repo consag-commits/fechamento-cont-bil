@@ -1,0 +1,137 @@
+{% load fechamento_extras %}
+
+{# Formulário de adicionar empresa #}
+<form hx-post="{% url 'ceipim_empresa_adicionar' %}" hx-target="#ceipim-container" hx-swap="innerHTML"
+      class="card shadow-sm mb-3">
+  <input type="hidden" name="ano" value="{{ ano }}">
+  <div class="card-body py-2 px-3 d-flex align-items-center gap-2 flex-wrap">
+    <label class="small text-muted mb-0 me-1">Adicionar empresa:</label>
+    <select name="empresa_id" class="form-select form-select-sm" style="max-width: 320px;" required>
+      <option value="">— selecione —</option>
+      {% for e in empresas_disponiveis %}
+        <option value="{{ e.id }}">{{ e.razao_social }}</option>
+      {% empty %}
+        <option disabled>Todas as empresas ativas já estão na lista</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-sm btn-primary" {% if not empresas_disponiveis %}disabled{% endif %}>
+      <i class="bi bi-plus-lg"></i> Adicionar
+    </button>
+  </div>
+</form>
+
+<form method="post" action="{% url 'ceipim_bulk_set' %}">
+  {% csrf_token %}
+  <input type="hidden" name="ano" value="{{ ano }}">
+
+  {# Barra de Ação em Lote (Contextual - Inicialmente oculta) #}
+  <div id="bulk-action-bar" class="card shadow-sm mb-3 d-none border-primary bg-primary bg-opacity-10">
+    <div class="card-body py-2 px-3 d-flex align-items-center gap-2 flex-wrap">
+      <i class="bi bi-info-circle text-primary me-1"></i>
+      <span class="small fw-semibold text-primary">Ação em lote:</span>
+      <select name="mes" class="form-select form-select-sm" style="width: auto;" required>
+        <option value="">Mês...</option>
+        {% for m in meses %}<option value="{{ m }}">{{ m|mes_abrev|title }}</option>{% endfor %}
+      </select>
+      <select name="status" class="form-select form-select-sm" style="width: auto;" required>
+        <option value="">Status...</option>
+        {% for value, label in status_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-sm btn-primary">Aplicar às selecionadas</button>
+      <span class="small text-muted ms-auto">
+        <a href="#" class="small text-decoration-none" data-marcar-todas>Marcar todas</a>
+        ·
+        <a href="#" class="small text-decoration-none" data-desmarcar-todas>Desmarcar todas</a>
+        · <strong id="contagem-ceipim" class="text-primary">0</strong> selecionada(s)
+      </span>
+    </div>
+  </div>
+
+  {# Tabela Principal #}
+  <div class="card shadow-sm">
+    {# Scrollbar superior sincronizada #}
+    <div class="top-scrollbar-wrapper" style="overflow-x: auto; overflow-y: hidden;">
+      <div class="top-scrollbar-content" style="height: 1px;"></div>
+    </div>
+    
+    <div class="table-responsive ceipim-table-container" style="padding-bottom: 150px;">
+      <table class="table table-sm table-hover align-middle mb-0" id="ceipim-table" style="white-space: nowrap;">
+        <thead class="table-light small">
+          <tr>
+            <th style="width: 32px;" class="text-center">
+              <input class="form-check-input" type="checkbox" data-marcar-todas title="Marcar todas">
+            </th>
+            <th class="sticky-col-empresa">Empresa</th>
+            <th class="text-center">{{ ano|add:"-1" }}</th>
+            {% for m in meses %}<th class="text-center">{{ m|mes_abrev|title }}</th>{% endfor %}
+            <th style="width: 32px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in linhas %}
+          <tr>
+            <td class="text-center">
+              <input class="form-check-input ceipim-check" type="checkbox" name="empresa_ids" value="{{ linha.empresa.id }}">
+            </td>
+            <td class="small fw-semibold sticky-col-empresa">{{ linha.empresa.razao_social }}</td>
+            <td class="text-center">
+              <div class="dropdown">
+                <button class="dropdown-toggle ceipim-badge status-{{ linha.anterior }}" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" id="btn-{{ linha.empresa.id }}-0">
+                  {{ status_dict|dictkey:linha.anterior }}
+                </button>
+                <ul class="dropdown-menu shadow-sm" style="min-width: 130px;">
+                  {% for value, label in status_choices %}
+                  <li>
+                    <button type="button" class="dropdown-item small py-1" 
+                            hx-post="{% url 'ceipim_set_status' linha.empresa.id ano|add:'-1' 0 %}" 
+                            hx-vals='{"status": "{{ value }}"}'
+                            hx-swap="none"
+                            onclick="updateBadge('btn-{{ linha.empresa.id }}-0', '{{ value }}', '{{ label }}')">
+                      <span class="ceipim-badge status-{{ value }} d-inline-block text-center w-100">{{ label }}</span>
+                    </button>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </td>
+            {% for item in linha.meses %}
+            <td class="text-center">
+              <div class="dropdown">
+                <button class="dropdown-toggle ceipim-badge status-{{ item.status }}" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" id="btn-{{ linha.empresa.id }}-{{ item.mes }}">
+                  {{ status_dict|dictkey:item.status }}
+                </button>
+                <ul class="dropdown-menu shadow-sm" style="min-width: 130px;">
+                  {% for value, label in status_choices %}
+                  <li>
+                    <button type="button" class="dropdown-item small py-1" 
+                            hx-post="{% url 'ceipim_set_status' linha.empresa.id ano item.mes %}" 
+                            hx-vals='{"status": "{{ value }}"}'
+                            hx-swap="none"
+                            onclick="updateBadge('btn-{{ linha.empresa.id }}-{{ item.mes }}', '{{ value }}', '{{ label }}')">
+                      <span class="ceipim-badge status-{{ value }} d-inline-block text-center w-100">{{ label }}</span>
+                    </button>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </td>
+            {% endfor %}
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                      hx-post="{% url 'ceipim_empresa_remover' linha.empresa.id %}"
+                      hx-vals='{"ano": "{{ ano }}"}'
+                      hx-target="#ceipim-container" hx-swap="innerHTML"
+                      hx-confirm="Remover {{ linha.empresa.razao_social }} da lista de Indicadores CEIPIM? (os dados já gravados não são apagados)"
+                      title="Remover da lista">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="{{ meses|length|add:4 }}" class="text-center text-muted small py-4">Nenhuma empresa na lista ainda — adicione acima.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</form>
