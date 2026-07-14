@@ -1,4 +1,4 @@
-{# Fragmento htmx: tabela de empresas do ciclo + formulário de adição #}
+{# Fragmento htmx: empresas do ciclo agrupadas por equipe + formulário de adição #}
 <div class="card shadow-sm">
   <div class="card-header d-flex align-items-center gap-2">
     <i class="bi bi-building text-primary"></i>
@@ -16,8 +16,13 @@
       <label class="small text-muted mb-0 me-1">Adicionar empresa:</label>
       <select name="empresa_id" class="form-select form-select-sm" style="max-width: 320px;" required>
         <option value="">— selecione —</option>
-        {% for e in empresas_disponiveis %}
-          <option value="{{ e.id }}">{{ e.razao_social }}</option>
+        {% regroup empresas_disponiveis by equipe as empresas_por_equipe %}
+        {% for grupo in empresas_por_equipe %}
+          <optgroup label="{{ grupo.grouper.nome|default:'Sem equipe' }}">
+            {% for e in grupo.list %}
+              <option value="{{ e.id }}">{{ e.razao_social }}</option>
+            {% endfor %}
+          </optgroup>
         {% empty %}
           <option disabled>Todas as empresas ativas já estão no ciclo</option>
         {% endfor %}
@@ -30,6 +35,12 @@
   </div>
   {% endif %}
 
+  {% regroup proc_data by processo.equipe as grupos_equipe %}
+  {% for grupo in grupos_equipe %}
+  <div class="px-3 pt-2 pb-1 bg-light border-bottom d-flex align-items-center gap-2">
+    <span class="text-muted text-uppercase small fw-bold">{{ grupo.grouper.nome|default:"Sem equipe" }}</span>
+    <span class="badge bg-secondary-subtle text-secondary">{{ grupo.list|length }}</span>
+  </div>
   <div class="table-responsive">
     <table class="table table-sm table-hover align-middle mb-0">
       <thead class="table-light small">
@@ -41,7 +52,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for d in proc_data %}
+        {% for d in grupo.list %}
         <tr>
           <td>
             <a href="{% url 'processo_matriz' d.processo.id %}" class="text-decoration-none small fw-semibold">
@@ -98,12 +109,11 @@
           </td>
           {% endif %}
         </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" class="text-center text-muted small py-3">Nenhuma empresa neste ciclo.</td>
-        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  {% empty %}
+  <p class="text-center text-muted small py-3 mb-0">Nenhuma empresa neste ciclo.</p>
+  {% endfor %}
 </div>

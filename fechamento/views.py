@@ -441,7 +441,10 @@ def _proc_data(processos):
 def _empresas_disponiveis(ciclo):
     """Empresas ativas que ainda não estão no ciclo."""
     ids_no_ciclo = ciclo.processos.values_list("empresa_id", flat=True)
-    return Empresa.objects.filter(ativa=True).exclude(id__in=ids_no_ciclo).order_by("razao_social")
+    return (
+        Empresa.objects.filter(ativa=True).exclude(id__in=ids_no_ciclo)
+        .select_related("equipe").order_by("equipe__nome", "razao_social")
+    )
 
 
 @gestor_required
@@ -475,7 +478,7 @@ def ciclo_config(request, ciclo_id):
         ciclo.processos
         .select_related("empresa", "equipe")
         .prefetch_related("itens_status")
-        .order_by("empresa__razao_social")
+        .order_by("equipe__nome", "empresa__razao_social")
     )
     return render(request, "fechamento/gestao/ciclo_config.html", {
         "ciclo": ciclo,
@@ -544,7 +547,7 @@ def _render_empresas_fragment(request, ciclo):
         ciclo.processos
         .select_related("empresa", "equipe")
         .prefetch_related("itens_status")
-        .order_by("empresa__razao_social")
+        .order_by("equipe__nome", "empresa__razao_social")
     )
     return render(request, "fechamento/gestao/_ciclo_empresas.html", {
         "ciclo": ciclo,
