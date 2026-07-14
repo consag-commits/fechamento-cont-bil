@@ -57,7 +57,7 @@ _NA = ItemStatus.Status.NA
 def index(request):
     """Lista de ciclos com progresso geral de cada um."""
     dados = []
-    for ciclo in Ciclo.objects.select_related("modelo").order_by("-data_referencia"):
+    for ciclo in Ciclo.objects.select_related("modelo").order_by("data_referencia"):
         stats = ItemStatus.objects.filter(processo__ciclo=ciclo).exclude(status=_NA)
         total = stats.count()
         feitos = stats.filter(status=_DONE).count()
