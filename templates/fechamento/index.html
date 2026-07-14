@@ -1,11 +1,23 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<style>
+  .card-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0,0,0,.08) !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h4 class="mb-0">Ciclos de fechamento</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="mb-0 fw-bold text-dark">Ciclos de fechamento</h4>
   {% if is_gestor %}
-  <a href="{% url 'ciclo_abrir' %}" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg"></i> Novo ciclo
+  <a href="{% url 'ciclo_abrir' %}" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
+    <i class="bi bi-plus-lg me-1"></i> Novo ciclo
   </a>
   {% endif %}
 </div>
@@ -14,21 +26,32 @@
 <div class="row g-3">
   {% for d in dados %}
   <div class="col-md-4">
-    <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between">
-          <h5 class="card-title mb-1">{{ d.ciclo.competencia_display }}</h5>
-          <span class="badge {% if d.ciclo.status == 'concluido' %}bg-success{% else %}bg-info text-dark{% endif %}">
-            {{ d.ciclo.get_status_display }}
+    <div class="card shadow-sm border-0 h-100 card-hover rounded-4">
+      <div class="card-body p-4 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h5 class="card-title mb-0 fw-bold text-dark">{{ d.ciclo.competencia_display }}</h5>
+          <span class="badge rounded-pill {% if d.ciclo.status == 'concluido' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} px-2 py-1">
+            <i class="bi {% if d.ciclo.status == 'concluido' %}bi-check2-circle{% else %}bi-door-open{% endif %} me-1"></i>{{ d.ciclo.get_status_display }}
           </span>
         </div>
-        <p class="text-muted small mb-2">{{ d.empresas }} empresa{{ d.empresas|pluralize }} · {{ d.pendencias }} pendência{{ d.pendencias|pluralize }}</p>
-        <div class="progress mb-2" style="height: 8px;">
-          <div class="progress-bar bg-success" style="width: {% widthratio d.percentual 1 100 %}%"></div>
-        </div>
-        <div class="d-flex justify-content-between align-items-center">
-          <span class="small fw-semibold">{% widthratio d.percentual 1 100 %}%</span>
-          <a href="{% url 'ciclo_consolidado' d.ciclo.id %}" class="btn btn-sm btn-outline-primary">Abrir</a>
+        
+        <p class="text-muted small mb-4">
+          <i class="bi bi-buildings me-1"></i>{{ d.empresas }} empresa{{ d.empresas|pluralize }} &nbsp;&bull;&nbsp; 
+          <i class="bi bi-list-task me-1"></i>{{ d.pendencias }} pendência{{ d.pendencias|pluralize }}
+        </p>
+        
+        <div class="mt-auto">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="small fw-semibold text-muted">Progresso</span>
+            <span class="small fw-bold text-dark">{% widthratio d.percentual 1 100 %}%</span>
+          </div>
+          <div class="progress mb-4 bg-secondary bg-opacity-10 rounded-pill" style="height: 6px;">
+            <div class="progress-bar {% if d.percentual == 1 %}bg-success{% else %}bg-primary{% endif %} rounded-pill" style="width: {% widthratio d.percentual 1 100 %}%"></div>
+          </div>
+          
+          <div class="d-flex justify-content-end">
+            <a href="{% url 'ciclo_consolidado' d.ciclo.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-medium">Abrir ciclo <i class="bi bi-arrow-right-short fs-6 lh-1 ms-1" style="vertical-align: text-bottom;"></i></a>
+          </div>
         </div>
       </div>
     </div>
