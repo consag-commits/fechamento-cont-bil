@@ -6,14 +6,16 @@
   <input type="hidden" name="ano" value="{{ ano }}">
   <div class="card-body py-2 px-3 d-flex align-items-center gap-2 flex-wrap">
     <label class="small text-muted mb-0 me-1">Adicionar empresa:</label>
-    <select name="empresa_id" class="form-select form-select-sm" style="max-width: 320px;" required>
-      <option value="">— selecione —</option>
+    <div style="min-width: 320px;">
+      <select name="empresa_id" id="ceipim-empresa-select" class="form-select form-select-sm" required placeholder="Digite a empresa para buscar...">
+        <option value="">— selecione —</option>
       {% for e in empresas_disponiveis %}
         <option value="{{ e.id }}">{{ e.razao_social }}</option>
       {% empty %}
         <option disabled>Todas as empresas ativas já estão na lista</option>
       {% endfor %}
-    </select>
+      </select>
+    </div>
     <button type="submit" class="btn btn-sm btn-primary" {% if not empresas_disponiveis %}disabled{% endif %}>
       <i class="bi bi-plus-lg"></i> Adicionar
     </button>
