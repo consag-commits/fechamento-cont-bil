@@ -184,11 +184,11 @@
 
   initTopScrollbar();
   initEmpresaSelect();
-  document.body.addEventListener('htmx:afterSwap', function(e) {
-      if (e.detail.target.id === 'ceipim-container') {
-          initTopScrollbar();
-          initEmpresaSelect();
-      }
+  
+  // Re-inicializar componentes após o HTMX atualizar o DOM (quando adiciona ou remove empresa)
+  document.body.addEventListener('htmx:load', function(e) {
+      initTopScrollbar();
+      initEmpresaSelect();
   });
 
 })();
