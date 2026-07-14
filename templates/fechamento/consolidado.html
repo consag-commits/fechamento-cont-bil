@@ -15,19 +15,19 @@
 {% include "fechamento/_filtro_equipe.html" %}
 
 <div class="row g-2 mb-4">
-  {% include "fechamento/_stat.html" with rotulo="Empresas" valor=resumo.empresas cor="secondary" %}
-  {% include "fechamento/_stat.html" with rotulo="Concluídas" valor=resumo.concluidas cor="success" %}
-  {% include "fechamento/_stat.html" with rotulo="Pendente de início" valor=resumo.pendentes cor="secondary" %}
-  {% include "fechamento/_stat.html" with rotulo="Em andamento" valor=resumo.em_andamento cor="info" %}
-  {% include "fechamento/_stat.html" with rotulo="Atrasadas" valor=resumo.atrasadas cor="danger" %}
-  {% include "fechamento/_stat.html" with rotulo="Pendências" valor=resumo.pendencias cor="warning" %}
-  {% include "fechamento/_stat.html" with rotulo="Atrasos" valor=resumo.atrasos cor="danger" %}
+  {% include "fechamento/_stat.html" with rotulo="Empresas" valor=resumo.empresas cor="secondary" icone="building" %}
+  {% include "fechamento/_stat.html" with rotulo="Concluídas" valor=resumo.concluidas cor="success" icone="check-circle-fill" %}
+  {% include "fechamento/_stat.html" with rotulo="Pendente de início" valor=resumo.pendentes cor="secondary" icone="pause-circle-fill" %}
+  {% include "fechamento/_stat.html" with rotulo="Em andamento" valor=resumo.em_andamento cor="primary" icone="hourglass-split" %}
+  {% include "fechamento/_stat.html" with rotulo="Atrasadas" valor=resumo.atrasadas cor="danger" icone="exclamation-octagon-fill" %}
+  {% include "fechamento/_stat.html" with rotulo="Pendências" valor=resumo.pendencias cor="warning" icone="list-task" %}
+  {% include "fechamento/_stat.html" with rotulo="Atrasos" valor=resumo.atrasos cor="danger" icone="clock-history" %}
 </div>
 
 <div class="card shadow-sm">
   <div class="table-responsive">
     <table class="table table-sm table-hover align-middle mb-0">
-      <thead class="table-light">
+      <thead class="table-light text-secondary small">
         <tr>
           <th style="min-width: 200px;">Empresa</th>
           <th>Equipe</th>
@@ -42,25 +42,34 @@
       <tbody>
         {% for l in linhas %}
         <tr>
-          <td class="fw-semibold">{{ l.processo.empresa.razao_social }}</td>
+          <td class="fw-semibold text-dark">{{ l.processo.empresa.razao_social }}</td>
           <td class="text-muted small">{{ l.processo.equipe.nome|default:"—" }}</td>
           {% for lf in l.resumo.fases %}
-          <td class="text-center small {% if lf.atrasada %}text-danger fw-semibold{% endif %}">
-            {% if lf.total %}{% widthratio lf.pct 1 100 %}%{% else %}<span class="text-muted">N/A</span>{% endif %}
+          <td class="text-center small {% if lf.atrasada %}text-danger fw-bold{% endif %}">
+            {% if lf.total %}{% widthratio lf.pct 1 100 %}%{% else %}<span class="text-black-50">N/A</span>{% endif %}
           </td>
           {% endfor %}
-          <td class="text-center">
-            <span class="badge bg-light text-dark border">{% widthratio l.resumo.percentual 1 100 %}%</span>
+          <td class="text-center align-middle" style="min-width: 100px;">
+            <div class="d-flex align-items-center justify-content-center gap-2">
+              <span class="fw-semibold small">{% widthratio l.resumo.percentual 1 100 %}%</span>
+              <div class="progress flex-grow-1" style="height: 5px; max-width: 50px;" role="progressbar" aria-valuenow="{% widthratio l.resumo.percentual 1 100 %}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar {% if l.resumo.percentual == 1 %}bg-success{% else %}bg-primary{% endif %}" style="width: {% widthratio l.resumo.percentual 1 100 %}%;"></div>
+              </div>
+            </div>
           </td>
-          <td class="text-center">{{ l.resumo.pendencias }}</td>
-          <td class="text-center">{% if l.resumo.atrasos %}<span class="text-danger fw-semibold">{{ l.resumo.atrasos }}</span>{% else %}0{% endif %}</td>
+          <td class="text-center fw-semibold small {% if l.resumo.pendencias == 0 %}text-black-50 fw-normal{% endif %}">{{ l.resumo.pendencias }}</td>
+          <td class="text-center fw-bold small {% if l.resumo.atrasos > 0 %}text-danger{% else %}text-black-50 fw-normal{% endif %}">
+            {{ l.resumo.atrasos }}
+          </td>
           <td class="text-nowrap">
-            {% if l.resumo.status_geral == 'Concluído' %}<span class="badge bg-success">{{ l.resumo.status_geral }}</span>
-            {% elif l.resumo.status_geral == 'Atrasado' %}<span class="badge bg-danger">{{ l.resumo.status_geral }}</span>
-            {% elif l.resumo.status_geral == 'Em andamento' %}<span class="badge bg-info text-dark">{{ l.resumo.status_geral }}</span>
-            {% else %}<span class="badge bg-secondary">{{ l.resumo.status_geral }}</span>{% endif %}
+            {% if l.resumo.status_geral == 'Concluído' %}<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-1 px-2"><i class="bi bi-check2"></i> {{ l.resumo.status_geral }}</span>
+            {% elif l.resumo.status_geral == 'Atrasado' %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill py-1 px-2"><i class="bi bi-exclamation-triangle"></i> {{ l.resumo.status_geral }}</span>
+            {% elif l.resumo.status_geral == 'Em andamento' %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill py-1 px-2"><i class="bi bi-arrow-repeat"></i> {{ l.resumo.status_geral }}</span>
+            {% else %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill py-1 px-2"><i class="bi bi-pause"></i> {{ l.resumo.status_geral }}</span>{% endif %}
           </td>
-          <td><a href="{% url 'processo_matriz' l.processo.id %}" class="btn btn-sm btn-outline-primary py-0 text-nowrap">Checklist</a></td>
+          <td class="text-end">
+            <a href="{% url 'processo_matriz' l.processo.id %}" class="btn btn-sm btn-outline-secondary rounded-pill py-1 px-3 text-nowrap"><i class="bi bi-card-checklist me-1"></i> Checklist</a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
