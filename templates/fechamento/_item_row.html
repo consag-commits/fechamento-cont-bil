@@ -1,29 +1,29 @@
 {% load fechamento_extras %}
 {% now "Y-m-d" as hoje_iso %}
 <div id="item-{{ s.id }}"
-     class="d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom checklist-row{% if atrasado %} bg-danger-subtle{% endif %}">
+     class="d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom checklist-row bg-white {% if atrasado %}border-start border-4 border-danger{% else %}border-start border-4 border-transparent{% endif %}" style="border-left-color: transparent;">
   <div class="me-auto">
-    <span class="{% if s.concluido %}text-decoration-line-through text-muted{% endif %}">{{ nome|default:s.item.nome|sufixo }}</span>
-    {% if atrasado %}<span class="badge text-bg-danger ms-1"><i class="bi bi-exclamation-triangle-fill"></i> vencido</span>{% endif %}
+    <span class="{% if s.concluido %}text-decoration-line-through text-muted{% else %}text-dark fw-medium{% endif %}">{{ nome|default:s.item.nome|sufixo }}</span>
+    {% if atrasado %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill ms-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>vencido</span>{% endif %}
   </div>
 
   {% if s.status == 'feito' %}
-  <input type="date" name="data" class="form-control form-control-sm" style="width: 150px;"
+  <input type="date" name="data" class="form-control form-control-sm bg-light border-0 rounded-pill px-3 text-secondary fw-medium" style="width: 140px;"
          value="{% if s.data %}{{ s.data|date:'Y-m-d' }}{% else %}{{ hoje_iso }}{% endif %}"
          title="Data de conclusão — altere se não foi hoje"
          hx-post="{% url 'item_set' s.id %}" hx-vals='{"status": "feito"}'
          hx-trigger="change" hx-target="#item-{{ s.id }}" hx-swap="outerHTML">
   {% endif %}
 
-  <div class="btn-group btn-group-sm" role="group" aria-label="Estado do item">
-    <button type="button" title="Feito (clique de novo para desmarcar)" aria-label="Marcar como feito"
-            class="btn {% if s.status == 'feito' %}btn-success{% else %}btn-outline-success{% endif %}"
+  <div class="d-flex gap-2 ms-2">
+    <button type="button" title="Feito (clique para alternar)" aria-label="Marcar como feito"
+            class="btn btn-sm {% if s.status == 'feito' %}btn-success shadow-sm{% else %}btn-light text-success{% endif %} rounded-pill px-3 fw-bold"
             hx-post="{% url 'item_set' s.id %}" hx-vals='{"status": "feito", "toggle": "1"}'
             hx-target="#item-{{ s.id }}" hx-swap="outerHTML">
       <i class="bi bi-check-lg"></i>
     </button>
-    <button type="button" title="N/A (clique de novo para desmarcar)"
-            class="btn {% if s.status == 'na' %}btn-secondary{% else %}btn-outline-secondary{% endif %}"
+    <button type="button" title="N/A (clique para alternar)"
+            class="btn btn-sm {% if s.status == 'na' %}btn-secondary shadow-sm{% else %}btn-light text-secondary{% endif %} rounded-pill px-2 fw-bold" style="font-size: 0.75rem;"
             hx-post="{% url 'item_set' s.id %}" hx-vals='{"status": "na", "toggle": "1"}'
             hx-target="#item-{{ s.id }}" hx-swap="outerHTML">N/A</button>
   </div>

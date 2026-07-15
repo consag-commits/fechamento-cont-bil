@@ -1,56 +1,44 @@
 <div id="preview-empresas">
-  <div class="d-flex justify-content-between align-items-center mb-1">
-    <label class="form-label small mb-0">Empresas do ciclo</label>
-    <span>
-      <a href="#" class="small" data-marcar-todas>Marcar todas</a>
-      ·
-      <a href="#" class="small" data-desmarcar-todas>Desmarcar todas</a>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 border border-primary-subtle">
+      <i class="bi bi-check2-circle me-1"></i> <strong id="contagem-marcadas">{{ total_marcadas }}</strong> de {{ empresas_ativas }} selecionadas
     </span>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-marcar-todas type="button">Todas</button>
+      <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-desmarcar-todas type="button">Nenhuma</button>
+    </div>
   </div>
-  <div class="form-text mt-0 mb-2">
+  <div class="form-text small mb-3">
     {% if anterior %}
-      Pré-marcadas as de <strong>{{ anterior.competencia_display }}</strong> (ainda ativas) — ajuste se precisar.
+      <i class="bi bi-info-circle me-1"></i> Pré-marcadas as ativas do ciclo <strong>{{ anterior.competencia_display }}</strong>.
     {% else %}
-      Nenhum ciclo anterior encontrado — todas as empresas ativas vêm pré-marcadas.
+      <i class="bi bi-info-circle me-1"></i> Nenhum ciclo anterior — todas as empresas ativas vêm pré-marcadas.
     {% endif %}
   </div>
 
   {% if empresas_marcadas %}
-  <div class="border rounded mb-2" style="max-height: 420px; overflow-y: auto;">
-    <table class="table table-sm table-hover align-middle mb-0">
-      <tbody>
-        {% regroup empresas_marcadas by empresa.equipe as grupos_equipe %}
-        {% for grupo in grupos_equipe %}
-        <tr class="table-light">
-          <td colspan="2" class="py-2 px-3">
-            <span class="text-muted text-uppercase small fw-bold">{{ grupo.grouper.nome|default:"Sem equipe" }}</span>
-            <span class="badge bg-secondary-subtle text-secondary ms-1">{{ grupo.list|length }}</span>
-          </td>
-        </tr>
-        {% for item in grupo.list %}
-        <tr>
-          <td class="ps-3" style="width: 36px;">
-            <input class="form-check-input empresa-check" type="checkbox" name="empresa_ids"
-                   value="{{ item.empresa.id }}" id="emp-{{ item.empresa.id }}"
-                   {% if item.marcada %}checked{% endif %}>
-          </td>
-          <td class="py-2">
-            <label class="form-check-label small mb-0 w-100" for="emp-{{ item.empresa.id }}" style="cursor: pointer;">
-              {{ item.empresa.razao_social }}
-            </label>
-          </td>
-        </tr>
-        {% endfor %}
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <div class="small text-muted mb-3">
-    <strong id="contagem-marcadas">{{ total_marcadas }}</strong> de {{ empresas_ativas }} empresa{{ empresas_ativas|pluralize }} selecionada{{ total_marcadas|pluralize }}
+  <div class="card border-secondary-subtle shadow-sm mb-3 border-0 rounded-4 overflow-hidden">
+    <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+      {% regroup empresas_marcadas by empresa.equipe as grupos_equipe %}
+      {% for grupo in grupos_equipe %}
+      <div class="list-group-item bg-light text-muted fw-bold small text-uppercase px-3 py-2 sticky-top border-bottom border-top" style="z-index: 1;">
+        {{ grupo.grouper.nome|default:"Sem equipe" }}
+        <span class="badge bg-secondary-subtle text-secondary ms-2 rounded-pill">{{ grupo.list|length }}</span>
+      </div>
+      {% for item in grupo.list %}
+      <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-2" style="cursor: pointer; border-bottom: 1px solid #f1f3f5;">
+        <input class="form-check-input flex-shrink-0 empresa-check m-0 fs-5" type="checkbox" name="empresa_ids"
+               value="{{ item.empresa.id }}"
+               {% if item.marcada %}checked{% endif %}>
+        <span class="small fw-medium text-dark">{{ item.empresa.razao_social }}</span>
+      </label>
+      {% endfor %}
+      {% endfor %}
+    </div>
   </div>
   {% else %}
-  <div class="alert alert-warning py-2 small">
-    Nenhuma empresa ativa cadastrada. <a href="{% url 'empresas_list' %}">Cadastre empresas</a> antes de abrir um ciclo.
+  <div class="alert alert-warning py-3 rounded-4 shadow-sm">
+    <i class="bi bi-exclamation-triangle me-2"></i>Nenhuma empresa ativa cadastrada. <a href="{% url 'empresas_list' %}" class="alert-link">Cadastre empresas</a>.
   </div>
   {% endif %}
 </div>

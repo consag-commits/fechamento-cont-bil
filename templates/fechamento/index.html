@@ -26,35 +26,33 @@
 <div class="row g-3">
   {% for d in dados %}
   <div class="col-md-4">
-    <div class="card shadow-sm border-0 h-100 card-hover rounded-4">
-      <div class="card-body p-4 d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <h5 class="card-title mb-0 fw-bold text-dark">{{ d.ciclo.competencia_display }}</h5>
-          <span class="badge rounded-pill {% if d.ciclo.status == 'concluido' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} px-2 py-1">
-            <i class="bi {% if d.ciclo.status == 'concluido' %}bi-check2-circle{% else %}bi-door-open{% endif %} me-1"></i>{{ d.ciclo.get_status_display }}
-          </span>
-        </div>
-        
-        <p class="text-muted small mb-4">
-          <i class="bi bi-buildings me-1"></i>{{ d.empresas }} empresa{{ d.empresas|pluralize }} &nbsp;&bull;&nbsp; 
-          <i class="bi bi-list-task me-1"></i>{{ d.pendencias }} pendência{{ d.pendencias|pluralize }}
-        </p>
-        
-        <div class="mt-auto">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="small fw-semibold text-muted">Progresso</span>
-            <span class="small fw-bold text-dark">{% widthratio d.percentual 1 100 %}%</span>
-          </div>
-          <div class="progress mb-4 bg-secondary bg-opacity-10 rounded-pill" style="height: 6px;">
-            <div class="progress-bar {% if d.percentual == 1 %}bg-success{% else %}bg-primary{% endif %} rounded-pill" style="width: {% widthratio d.percentual 1 100 %}%"></div>
+    <a href="{% url 'ciclo_consolidado' d.ciclo.id %}" class="text-decoration-none">
+      <div class="card shadow-sm border-0 h-100 card-hover rounded-4">
+        <div class="card-body p-4 d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <h5 class="card-title mb-0 fw-bold text-dark">{{ d.ciclo.competencia_display }}</h5>
+            <span class="badge rounded-pill {% if d.ciclo.status == 'concluido' %}bg-success-subtle text-success border border-success-subtle{% else %}bg-primary-subtle text-primary border border-primary-subtle{% endif %} px-2 py-1">
+              <i class="bi {% if d.ciclo.status == 'concluido' %}bi-check2-circle{% else %}bi-door-open{% endif %} me-1"></i>{{ d.ciclo.get_status_display }}
+            </span>
           </div>
           
-          <div class="d-flex justify-content-end">
-            <a href="{% url 'ciclo_consolidado' d.ciclo.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-medium">Abrir ciclo <i class="bi bi-arrow-right-short fs-6 lh-1 ms-1" style="vertical-align: text-bottom;"></i></a>
+          <p class="text-muted small mb-4">
+            <i class="bi bi-buildings me-1"></i>{{ d.empresas }} empresa{{ d.empresas|pluralize }} &nbsp;&bull;&nbsp; 
+            <i class="bi bi-list-task me-1"></i>{{ d.pendencias }} pendência{{ d.pendencias|pluralize }}
+          </p>
+          
+          <div class="mt-auto">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="small fw-semibold text-muted">Progresso</span>
+              <span class="small fw-bold text-dark">{% widthratio d.percentual 1 100 %}%</span>
+            </div>
+            <div class="progress mb-1 bg-secondary bg-opacity-10 rounded-pill" style="height: 6px;">
+              <div class="progress-bar {% if d.percentual == 1 %}bg-success{% else %}bg-primary{% endif %} rounded-pill" style="width: {% widthratio d.percentual 1 100 %}%"></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </a>
   </div>
   {% endfor %}
 </div>

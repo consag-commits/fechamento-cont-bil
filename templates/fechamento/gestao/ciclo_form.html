@@ -12,46 +12,62 @@
 </nav>
 
 <div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-body p-4">
-        <h5 class="card-title mb-1">Abrir fechamento</h5>
-        <p class="text-muted small">Gera o checklist com as empresas do ciclo anterior (ainda ativas), ou de todas as empresas ativas se não houver ciclo anterior. Ajuste a seleção abaixo se precisar.</p>
+  <div class="col-lg-10 col-xl-9">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-4 p-lg-5">
+        <h4 class="card-title fw-bold text-dark mb-2">Novo Ciclo de Fechamento</h4>
+        <p class="text-muted small mb-4">Gera o checklist com as empresas do ciclo anterior (ainda ativas), ou todas as empresas ativas caso seja o primeiro ciclo.</p>
 
         <form method="post" novalidate>
           {% csrf_token %}
+          
+          <div class="row g-4">
+            <!-- Coluna Esquerda: Configurações -->
+            <div class="col-md-5 border-end">
+              <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-gear text-primary me-2"></i>Configurações</h6>
+              
+              <div class="mb-4">
+                <label class="form-label small fw-bold text-dark" for="referencia">Competência (Mês a fechar)</label>
+                <input type="month" name="referencia" id="referencia" class="form-control"
+                       value="{{ referencia }}" required
+                       hx-get="{% url 'ciclo_abrir_preview' %}" hx-trigger="change"
+                       hx-target="#preview-empresas" hx-swap="outerHTML">
+                <div class="form-text small">O trabalho ocorre no mês seguinte — os prazos vêm sugeridos.</div>
+              </div>
 
-          <div class="mb-3">
-            <label class="form-label small" for="referencia">Competência (mês contábil a fechar)</label>
-            <input type="month" name="referencia" id="referencia" class="form-control"
-                   value="{{ referencia }}" required
-                   hx-get="{% url 'ciclo_abrir_preview' %}" hx-trigger="change"
-                   hx-target="#preview-empresas" hx-swap="outerHTML">
-            <div class="form-text">O trabalho ocorre no mês seguinte — os prazos abaixo já vêm sugeridos nele.</div>
-          </div>
-
-          {% if fases %}
-          <label class="form-label small">Prazos por fase (mês de trabalho)</label>
-          <div class="border rounded p-2 mb-3">
-            {% for f in fases %}
-            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-              <span class="small">{{ f.nome }}</span>
-              <input type="date" name="prazo_{{ f.id }}" id="prazo_{{ f.id }}"
-                     data-dia="{{ f.prazo_offset_dias }}" class="form-control form-control-sm prazo-fase"
-                     style="width: 175px;" value="{{ prazos_form|dictkey:f.id }}">
+              {% if fases %}
+              <div class="mb-3">
+                <label class="form-label small fw-bold text-dark">Prazos por fase</label>
+                <div class="card bg-light border-0">
+                  <div class="card-body py-2 px-3">
+                    {% for f in fases %}
+                    <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-secondary-subtle">
+                      <span class="small text-muted"><i class="bi bi-calendar-event me-1"></i>{{ f.nome }}</span>
+                      <input type="date" name="prazo_{{ f.id }}" id="prazo_{{ f.id }}"
+                             data-dia="{{ f.prazo_offset_dias }}" class="form-control form-control-sm prazo-fase text-secondary"
+                             style="width: 135px;" value="{{ prazos_form|dictkey:f.id }}">
+                    </div>
+                    {% endfor %}
+                    <div class="form-text small mb-0 mt-2">Vazio = usa a sugestão automática.</div>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
             </div>
-            {% endfor %}
-            <div class="form-text">Ajuste cada prazo se necessário. Vazio = usa a sugestão.</div>
-          </div>
-          {% endif %}
 
-          {% include "fechamento/gestao/_ciclo_abrir_preview.html" %}
+            <!-- Coluna Direita: Empresas Participantes -->
+            <div class="col-md-7">
+              <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-buildings text-primary me-2"></i>Participantes</h6>
+              
+              {% include "fechamento/gestao/_ciclo_abrir_preview.html" %}
 
-          <div class="d-flex gap-2">
-            <button type="submit" id="btn-abrir-ciclo" class="btn btn-primary" {% if total_marcadas == 0 %}disabled{% endif %}>
-              <i class="bi bi-calendar-check"></i> Abrir ciclo
-            </button>
-            <a href="{% url 'index' %}" class="btn btn-outline-secondary">Cancelar</a>
+              <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                <a href="{% url 'index' %}" class="btn btn-outline-secondary rounded-pill px-4">Cancelar</a>
+                <button type="submit" id="btn-abrir-ciclo" class="btn btn-primary rounded-pill px-4 shadow-sm" {% if total_marcadas == 0 %}disabled{% endif %}>
+                  <i class="bi bi-calendar-check me-1"></i> Abrir ciclo
+                </button>
+              </div>
+            </div>
           </div>
         </form>
       </div>

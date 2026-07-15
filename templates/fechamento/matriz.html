@@ -27,28 +27,28 @@
 </div>
 
 {% for grupo in grupos %}
-<div class="card shadow-sm mb-3">
-  <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+<div class="card shadow-sm mb-4 border-0 rounded-4 overflow-hidden">
+  <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
     <div>
-      <span class="fw-semibold">{{ grupo.fase.nome }}</span>
+      <span class="fw-bold text-dark">{{ grupo.fase.nome }}</span>
       <span class="text-muted small ms-2">
-        {% if grupo.deadline %}<i class="bi bi-calendar-event"></i> prazo {{ grupo.deadline|date:"d/m/Y" }}{% endif %}
-        {% if grupo.atrasada %}<span class="badge text-bg-danger ms-1">vencido</span>{% endif %}
+        {% if grupo.deadline %}<i class="bi bi-calendar-event me-1"></i>prazo {{ grupo.deadline|date:"d/m/Y" }}{% endif %}
+        {% if grupo.atrasada %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill ms-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>vencido</span>{% endif %}
       </span>
     </div>
-    <div class="d-flex align-items-center gap-2" style="min-width: 160px;">
-      <div class="progress flex-fill" style="height: 6px;">
-        <div class="progress-bar {% if grupo.atrasada %}bg-danger{% else %}bg-success{% endif %}"
+    <div class="d-flex align-items-center gap-3" style="min-width: 180px;">
+      <div class="progress flex-fill bg-secondary bg-opacity-10 rounded-pill" style="height: 6px;">
+        <div class="progress-bar {% if grupo.atrasada %}bg-danger{% else %}bg-success{% endif %} rounded-pill"
              style="width: {% widthratio grupo.pct 1 100 %}%"></div>
       </div>
-      <span class="small text-muted text-nowrap">{{ grupo.feitos }}/{{ grupo.total }}</span>
+      <span class="small fw-bold text-muted text-nowrap">{{ grupo.feitos }}/{{ grupo.total }}</span>
     </div>
   </div>
   <div>
     {% for bloco in grupo.blocos %}
       {% if bloco.tipo == 'sub' %}
-      <div class="px-3 pt-2 pb-1 bg-light border-bottom">
-        <span class="text-muted text-uppercase small fw-bold">{{ bloco.label }}</span>
+      <div class="px-3 py-2 bg-secondary bg-opacity-10 border-bottom border-top border-secondary-subtle">
+        <span class="text-secondary text-uppercase small fw-bold" style="letter-spacing: 0.5px;"><i class="bi bi-folder2-open me-2"></i>{{ bloco.label }}</span>
       </div>
       {% for item in bloco.itens %}
         {% include "fechamento/_item_row.html" with s=item.s atrasado=item.atrasado %}
@@ -62,8 +62,8 @@
 {% endfor %}
 
 <div class="d-flex justify-content-end mb-4">
-  <a href="{% url 'ciclo_consolidado' processo.ciclo.id %}" class="btn btn-primary">
-    <i class="bi bi-check2-circle"></i> Salvar e voltar ao fechamento
+  <a href="{% url 'ciclo_consolidado' processo.ciclo.id %}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+    <i class="bi bi-check2-circle me-1"></i> Salvar e voltar ao fechamento
   </a>
 </div>
 {% endblock %}

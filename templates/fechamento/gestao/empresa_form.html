@@ -16,56 +16,92 @@
 </nav>
 
 <div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-body p-4">
-        <h5 class="card-title mb-3">{% if novo %}Nova empresa{% else %}Editar empresa{% endif %}</h5>
+  <div class="col-md-7 col-lg-6">
+    <div class="card shadow-sm border-0 rounded-4 mb-5">
+      <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4 text-center">
+        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 56px; height: 56px; font-size: 1.5rem;">
+          <i class="bi {% if novo %}bi-building-add{% else %}bi-building-gear{% endif %}"></i>
+        </div>
+        <h4 class="card-title fw-bold text-dark mb-1">{% if novo %}Nova empresa{% else %}Editar empresa{% endif %}</h4>
+        <p class="text-muted small">{% if novo %}Preencha os dados abaixo para cadastrar uma nova empresa no sistema.{% else %}Atualize as informações desta empresa.{% endif %}</p>
+      </div>
+      <div class="card-body p-4 custom-form">
 
         <form method="post" novalidate>
           {% csrf_token %}
 
           {% if novo %}
-          <div class="mb-3">
-            <label class="form-label small" for="catalogo">Buscar no catálogo (Omie)</label>
-            <select id="catalogo" placeholder="Digite a razão social ou o CNPJ…"></select>
-            <div class="form-text">Escolha para preencher automaticamente — ou digite manualmente abaixo.</div>
+          <div class="mb-4">
+            <label class="form-label small fw-semibold text-secondary mb-1" for="catalogo">Buscar no catálogo (Omie)</label>
+            <div class="rounded-3 overflow-hidden bg-light border-0">
+              <select id="catalogo" placeholder="Digite a razão social ou o CNPJ…"></select>
+            </div>
+            <div class="form-text small text-muted mt-1"><i class="bi bi-info-circle me-1"></i>Escolha para preencher automaticamente — ou digite manualmente abaixo.</div>
           </div>
-          <hr class="text-muted">
+          <hr class="text-muted opacity-25 mb-4">
           {% endif %}
 
           <div class="mb-3">
-            <label class="form-label small" for="{{ form.razao_social.id_for_label }}">{{ form.razao_social.label }}</label>
-            {{ form.razao_social }}
-            {% for erro in form.razao_social.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+            <label class="form-label small fw-semibold text-secondary mb-1" for="{{ form.razao_social.id_for_label }}">{{ form.razao_social.label }}</label>
+            <input type="text" name="{{ form.razao_social.name }}" class="form-control bg-light border-0 rounded-3 text-secondary py-2 px-3" id="{{ form.razao_social.id_for_label }}" value="{{ form.razao_social.value|default:'' }}">
+            {% for erro in form.razao_social.errors %}<div class="text-danger small mt-1 fw-medium"><i class="bi bi-exclamation-circle me-1"></i>{{ erro }}</div>{% endfor %}
           </div>
 
           <div class="mb-3">
-            <label class="form-label small" for="{{ form.cnpj.id_for_label }}">{{ form.cnpj.label }}</label>
-            {{ form.cnpj }}
-            {% for erro in form.cnpj.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+            <label class="form-label small fw-semibold text-secondary mb-1" for="{{ form.cnpj.id_for_label }}">{{ form.cnpj.label }}</label>
+            <input type="text" name="{{ form.cnpj.name }}" class="form-control bg-light border-0 rounded-3 text-secondary py-2 px-3" id="{{ form.cnpj.id_for_label }}" value="{{ form.cnpj.value|default:'' }}">
+            {% for erro in form.cnpj.errors %}<div class="text-danger small mt-1 fw-medium"><i class="bi bi-exclamation-circle me-1"></i>{{ erro }}</div>{% endfor %}
           </div>
 
           <div class="mb-3">
-            <label class="form-label small" for="{{ form.equipe.id_for_label }}">{{ form.equipe.label }}</label>
-            {{ form.equipe }}
-            {% for erro in form.equipe.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+            <label class="form-label small fw-semibold text-secondary mb-1" for="{{ form.equipe.id_for_label }}">{{ form.equipe.label }}</label>
+            <div class="rounded-3 overflow-hidden">
+              <select name="{{ form.equipe.name }}" class="form-select bg-light border-0 rounded-3 text-secondary py-2 px-3" id="{{ form.equipe.id_for_label }}">
+                {% for value, texto in form.equipe.field.choices %}
+                <option value="{{ value }}" {% if form.equipe.value|stringformat:'s' == value|stringformat:'s' %}selected{% endif %}>{{ texto }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% for erro in form.equipe.errors %}<div class="text-danger small mt-1 fw-medium"><i class="bi bi-exclamation-circle me-1"></i>{{ erro }}</div>{% endfor %}
           </div>
 
-          <div class="mb-3 form-check">
-            {{ form.ativa }}
-            <label class="form-check-label" for="{{ form.ativa.id_for_label }}">{{ form.ativa.label }}</label>
+          <div class="mb-3 form-check form-switch mt-4">
+            <input type="checkbox" name="{{ form.ativa.name }}" class="form-check-input fs-5" id="{{ form.ativa.id_for_label }}" {% if form.ativa.value %}checked{% endif %}>
+            <label class="form-check-label ms-2 pt-1 fw-semibold text-dark" for="{{ form.ativa.id_for_label }}">{{ form.ativa.label }}</label>
           </div>
 
-
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Salvar</button>
-            <a href="{% url 'empresas_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <div class="d-flex gap-2 justify-content-center mt-5">
+            <a href="{% url 'empresas_list' %}" class="btn btn-light text-secondary rounded-pill px-4 fw-semibold border">Cancelar</a>
+            <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">{% if novo %}Criar Empresa{% else %}Salvar Alterações{% endif %}</button>
           </div>
         </form>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+  .custom-form .form-control:focus, .custom-form .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    background-color: #fff !important;
+  }
+  .ts-control {
+    background-color: var(--bs-light) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1rem !important;
+    color: var(--bs-secondary) !important;
+  }
+  .ts-wrapper.focus .ts-control {
+    background-color: #fff !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important;
+  }
+  .ts-dropdown {
+    border-radius: 8px;
+    border: 1px solid var(--bs-border-color-translucent);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+  }
+</style>
 {% endblock %}
 
 {% block extra_js %}

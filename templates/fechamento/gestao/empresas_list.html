@@ -10,60 +10,63 @@
   </ol>
 </nav>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <h4 class="mb-0">Empresas</h4>
-    <span class="text-muted small">{{ total }} cadastrada{{ total|pluralize }} · {{ ativas }} ativa{{ ativas|pluralize }}</span>
+    <h4 class="mb-0 fw-bold text-dark">Empresas</h4>
+    <span class="text-muted small fw-medium">{{ total }} cadastrada{{ total|pluralize }} · {{ ativas }} ativa{{ ativas|pluralize }}</span>
   </div>
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-3">
     <form method="get" class="d-flex" role="search">
-      <div class="input-group input-group-sm">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar empresa…">
+      <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden bg-white">
+        <span class="input-group-text bg-white border-0 text-secondary pe-1"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" value="{{ q }}" class="form-control border-0 bg-white" placeholder="Buscar empresa…" style="box-shadow: none;">
       </div>
     </form>
-    <a href="{% url 'empresa_criar' %}" class="btn btn-primary btn-sm text-nowrap">
-      <i class="bi bi-plus-lg"></i> Nova empresa
+    <a href="{% url 'empresa_criar' %}" class="btn btn-primary btn-sm text-nowrap rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center">
+      <i class="bi bi-plus-lg me-1"></i> Nova empresa
     </a>
   </div>
 </div>
 
-<div class="card shadow-sm">
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
   <div class="table-responsive">
-    <table class="table table-sm table-hover align-middle mb-0">
+    <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th>Razão social</th>
-          <th style="width: 220px;">Equipe padrão</th>
-          <th style="width: 110px;">Situação</th>
-          <th style="width: 90px;"></th>
+          <th class="py-3 px-4 border-bottom-0 text-secondary small text-uppercase" style="letter-spacing: 0.5px;">Razão social</th>
+          <th class="py-3 border-bottom-0 text-secondary small text-uppercase" style="width: 220px; letter-spacing: 0.5px;">Equipe padrão</th>
+          <th class="py-3 border-bottom-0 text-secondary small text-uppercase" style="width: 110px; letter-spacing: 0.5px;">Situação</th>
+          <th class="py-3 px-4 border-bottom-0 text-secondary small text-uppercase" style="width: 90px;"></th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="border-top-0">
         {% for e in empresas %}
         <tr>
-          <td class="fw-semibold">
-            {{ e.razao_social }}
+          <td class="px-4 py-3">
+            <div class="fw-bold text-dark">{{ e.razao_social }}</div>
             {% if e.cnpj %}<div class="text-muted small">{{ e.cnpj }}</div>{% endif %}
           </td>
-          <td>
-            <select class="form-select form-select-sm"
+          <td class="py-3">
+            <select class="form-select form-select-sm bg-light border-0 text-secondary fw-medium rounded-3"
                     name="equipe"
                     hx-post="{% url 'empresa_set_equipe' e.id %}"
                     hx-trigger="change"
-                    hx-swap="none">
+                    hx-swap="none" style="cursor: pointer;">
               <option value="">— sem equipe —</option>
               {% for eq in equipes %}
               <option value="{{ eq.id }}" {% if e.equipe_id == eq.id %}selected{% endif %}>{{ eq.nome }}</option>
               {% endfor %}
             </select>
           </td>
-          {% include "fechamento/gestao/_empresa_ativa.html" with e=e %}
-          <td><a href="{% url 'empresa_editar' e.id %}" class="btn btn-sm btn-outline-primary py-0">Editar</a></td>
+          <td class="py-3">{% include "fechamento/gestao/_empresa_ativa.html" with e=e %}</td>
+          <td class="px-4 py-3 text-end">
+            <a href="{% url 'empresa_editar' e.id %}" class="btn btn-sm btn-light text-primary rounded-pill px-3 shadow-sm fw-semibold">Editar</a>
+          </td>
         </tr>
         {% empty %}
-        <tr><td colspan="4" class="text-center text-muted py-3">
-          {% if q %}Nenhuma empresa encontrada para “{{ q }}”.{% else %}Nenhuma empresa cadastrada.{% endif %}
+        <tr><td colspan="4" class="text-center text-muted p-5">
+          <i class="bi bi-building fs-1 d-block mb-3 text-secondary opacity-50"></i>
+          <span class="fw-medium">{% if q %}Nenhuma empresa encontrada para “{{ q }}”.{% else %}Nenhuma empresa cadastrada.{% endif %}</span>
         </td></tr>
         {% endfor %}
       </tbody>
