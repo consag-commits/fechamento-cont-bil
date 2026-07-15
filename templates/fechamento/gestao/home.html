@@ -2,16 +2,35 @@
 
 {% block title %}Gestão{% endblock %}
 
+{% block extra_css %}
+<style>
+  .card-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0,0,0,.08) !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h4 class="mb-3">Gestão</h4>
+<h4 class="mb-4 fw-bold text-dark">Gestão</h4>
 
 <div class="row g-3">
   <div class="col-md-4">
     <a href="{% url 'usuarios_list' %}" class="text-decoration-none">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <h5 class="card-title"><i class="bi bi-people text-primary"></i> Usuários</h5>
-          <p class="card-text text-muted small mb-0">Cadastrar funcionários e definir papéis (operador / gestor).</p>
+      <div class="card shadow-sm h-100 border-0 card-hover rounded-4">
+        <div class="card-body p-4 d-flex align-items-center">
+          <div class="flex-shrink-0 me-3">
+            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+              <i class="bi bi-people fs-4"></i>
+            </div>
+          </div>
+          <div>
+            <h5 class="card-title fw-bold text-dark mb-1">Usuários</h5>
+            <p class="card-text text-muted small mb-0">Cadastrar funcionários e definir papéis.</p>
+          </div>
         </div>
       </div>
     </a>
@@ -19,10 +38,17 @@
 
   <div class="col-md-4">
     <a href="{% url 'empresas_list' %}" class="text-decoration-none">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <h5 class="card-title"><i class="bi bi-building text-primary"></i> Empresas</h5>
-          <p class="card-text text-muted small mb-0">Cadastro de empresas e distribuição por equipe.</p>
+      <div class="card shadow-sm h-100 border-0 card-hover rounded-4">
+        <div class="card-body p-4 d-flex align-items-center">
+          <div class="flex-shrink-0 me-3">
+            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+              <i class="bi bi-building fs-4"></i>
+            </div>
+          </div>
+          <div>
+            <h5 class="card-title fw-bold text-dark mb-1">Empresas</h5>
+            <p class="card-text text-muted small mb-0">Cadastro e distribuição por equipe.</p>
+          </div>
         </div>
       </div>
     </a>
@@ -30,10 +56,17 @@
 
   <div class="col-md-4">
     <a href="{% url 'equipes_list' %}" class="text-decoration-none">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <h5 class="card-title"><i class="bi bi-people-fill text-primary"></i> Equipes</h5>
-          <p class="card-text text-muted small mb-0">Cadastro das equipes de trabalho.</p>
+      <div class="card shadow-sm h-100 border-0 card-hover rounded-4">
+        <div class="card-body p-4 d-flex align-items-center">
+          <div class="flex-shrink-0 me-3">
+            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+              <i class="bi bi-people-fill fs-4"></i>
+            </div>
+          </div>
+          <div>
+            <h5 class="card-title fw-bold text-dark mb-1">Equipes</h5>
+            <p class="card-text text-muted small mb-0">Cadastro das equipes de trabalho.</p>
+          </div>
         </div>
       </div>
     </a>
@@ -41,10 +74,17 @@
 
   <div class="col-md-4">
     <a href="{% url 'ciclo_abrir' %}" class="text-decoration-none">
-      <div class="card shadow-sm h-100 border-primary">
-        <div class="card-body">
-          <h5 class="card-title"><i class="bi bi-calendar-plus text-primary"></i> Abrir ciclo</h5>
-          <p class="card-text text-muted small mb-0">Abrir o fechamento do mês e gerar os checklists.</p>
+      <div class="card shadow-sm h-100 border-0 card-hover rounded-4" style="background-color: #f8faff;">
+        <div class="card-body p-4 d-flex align-items-center">
+          <div class="flex-shrink-0 me-3">
+            <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+              <i class="bi bi-calendar-plus fs-4"></i>
+            </div>
+          </div>
+          <div>
+            <h5 class="card-title fw-bold text-dark mb-1">Abrir ciclo</h5>
+            <p class="card-text text-muted small mb-0">Gerar checklists do mês.</p>
+          </div>
         </div>
       </div>
     </a>
@@ -52,13 +92,21 @@
 
   <div class="col-md-4">
     <a href="{% url 'ciclos_list' %}" class="text-decoration-none">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <h5 class="card-title"><i class="bi bi-gear text-primary"></i> Configuração de Ciclos</h5>
-          <p class="card-text text-muted small mb-0">Gerenciar prazos e empresas de ciclos já abertos.</p>
+      <div class="card shadow-sm h-100 border-0 card-hover rounded-4">
+        <div class="card-body p-4 d-flex align-items-center">
+          <div class="flex-shrink-0 me-3">
+            <div class="bg-secondary-subtle text-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+              <i class="bi bi-gear fs-4"></i>
+            </div>
+          </div>
+          <div>
+            <h5 class="card-title fw-bold text-dark mb-1">Configurações</h5>
+            <p class="card-text text-muted small mb-0">Prazos e empresas de ciclos abertos.</p>
+          </div>
         </div>
       </div>
     </a>
   </div>
+
 </div>
 {% endblock %}

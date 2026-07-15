@@ -14,10 +14,12 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
-from .forms import EmpresaForm, EquipeForm, UsuarioCriarForm, UsuarioEditarForm, nome_papel
+from .forms import (
+    EmpresaForm, EquipeForm, OcorrenciaForm, UsuarioCriarForm, UsuarioEditarForm, nome_papel,
+)
 from .models import (
     CatalogoEmpresa, Ciclo, CicloPrazo, Empresa, Equipe, Fase, IndicadorCeipim,
-    ItemStatus, ModeloChecklist, Perfil, Processo,
+    ItemStatus, ModeloChecklist, Ocorrencia, Perfil, Processo,
 )
 from .permissions import (
     gestor_required, is_gestor, filtrar_processos, pode_ver_processo,
@@ -224,8 +226,16 @@ def gestao_home(request):
 
 @gestor_required
 def usuarios_list(request):
-    usuarios = User.objects.select_related("perfil").order_by("first_name", "username")
-    return render(request, "fechamento/gestao/usuarios_list.html", {"usuarios": usuarios})
+    q = request.GET.get("q", "").strip()
+    usuarios = (
+        User.objects.select_related("perfil")
+        .prefetch_related("perfil__equipes")
+        .annotate(qtd_ocorrencias=Count("ocorrencias"))
+    )
+    if q:
+        usuarios = usuarios.filter(first_name__icontains=q) | usuarios.filter(username__icontains=q)
+    usuarios = usuarios.distinct().order_by("first_name", "username")
+    return render(request, "fechamento/gestao/usuarios_list.html", {"usuarios": usuarios, "q": q})
 
 
 @gestor_required
@@ -461,6 +471,8 @@ def usuario_editar(request, user_id):
         "nome": usuario.first_name,
         "email": usuario.email,
         "papel": getattr(perfil, "papel", Perfil.Papel.OPERADOR),
+        "cargo": getattr(perfil, "cargo", ""),
+        "data_admissao": getattr(perfil, "data_admissao", None),
         "equipes": perfil.equipes.all() if perfil else [],
         "ativo": usuario.is_active,
     }
@@ -749,3 +761,70 @@ def ceipim_bulk_set(request):
 
     messages.success(request, f"{atualizadas} empresa(s) atualizada(s).")
     return redirect(f"{reverse('indicadores_ceipim')}?ano={ano}")
+
+
+# ── Gestão › Perfil do funcionário (hub) e Ocorrências — só gestor ────────────
+def _tempo_de_casa(data_admissao, hoje=None):
+    """Texto 'X anos Y meses' a partir da data de admissão (ou None)."""
+    if not data_admissao:
+        return None
+    hoje = hoje or timezone.localdate()
+    meses = (hoje.year - data_admissao.year) * 12 + (hoje.month - data_admissao.month)
+    if hoje.day < data_admissao.day:
+        meses -= 1
+    meses = max(meses, 0)
+    anos, resto = divmod(meses, 12)
+    partes = []
+    if anos:
+        partes.append(f"{anos} ano{'s' if anos != 1 else ''}")
+    if resto:
+        partes.append(f"{resto} {'meses' if resto != 1 else 'mês'}")
+    return " ".join(partes) or "menos de 1 mês"
+
+
+@gestor_required
+def usuario_perfil(request, user_id):
+    """Perfil do funcionário (hub): dados + indicadores + ocorrências.
+    O POST registra uma nova ocorrência."""
+    funcionario = get_object_or_404(User.objects.select_related("perfil"), pk=user_id)
+    form = OcorrenciaForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        ocorrencia = form.save(commit=False)
+        ocorrencia.funcionario = funcionario
+        ocorrencia.autor = request.user
+        ocorrencia.save()
+        messages.success(request, "Ocorrência registrada.")
+        return redirect("usuario_perfil", user_id=funcionario.id)
+    perfil = getattr(funcionario, "perfil", None)
+    return render(request, "fechamento/gestao/usuario_perfil.html", {
+        "funcionario": funcionario,
+        "perfil": perfil,
+        "tempo_de_casa": _tempo_de_casa(getattr(perfil, "data_admissao", None)),
+        "form": form,
+        "ocorrencias": funcionario.ocorrencias.select_related("autor").all(),
+    })
+
+
+@gestor_required
+def ocorrencia_editar(request, ocorrencia_id):
+    """Edita uma ocorrência existente."""
+    ocorrencia = get_object_or_404(Ocorrencia.objects.select_related("funcionario"), pk=ocorrencia_id)
+    form = OcorrenciaForm(request.POST or None, instance=ocorrencia)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Ocorrência atualizada.")
+        return redirect("usuario_perfil", user_id=ocorrencia.funcionario_id)
+    return render(request, "fechamento/gestao/ocorrencia_form.html", {
+        "form": form, "ocorrencia": ocorrencia, "funcionario": ocorrencia.funcionario,
+    })
+
+
+@gestor_required
+@require_POST
+def ocorrencia_remover(request, ocorrencia_id):
+    """Apaga uma ocorrência."""
+    ocorrencia = get_object_or_404(Ocorrencia, pk=ocorrencia_id)
+    user_id = ocorrencia.funcionario_id
+    ocorrencia.delete()
+    messages.success(request, "Ocorrência removida.")
+    return redirect("usuario_perfil", user_id=user_id)

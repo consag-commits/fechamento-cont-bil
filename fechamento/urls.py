@@ -35,6 +35,11 @@ urlpatterns = [
     path("gestao/usuarios/", views.usuarios_list, name="usuarios_list"),
     path("gestao/usuarios/novo/", views.usuario_criar, name="usuario_criar"),
     path("gestao/usuarios/<int:user_id>/editar/", views.usuario_editar, name="usuario_editar"),
+    path("gestao/usuarios/<int:user_id>/perfil/", views.usuario_perfil, name="usuario_perfil"),
+
+    # Ocorrências (registro/edição — vivem dentro do perfil do funcionário)
+    path("gestao/ocorrencias/<int:ocorrencia_id>/editar/", views.ocorrencia_editar, name="ocorrencia_editar"),
+    path("gestao/ocorrencias/<int:ocorrencia_id>/remover/", views.ocorrencia_remover, name="ocorrencia_remover"),
     path("gestao/empresas/", views.empresas_list, name="empresas_list"),
     path("gestao/empresas/catalogo.json", views.empresas_catalogo_json, name="empresas_catalogo_json"),
     path("gestao/empresas/nova/", views.empresa_criar, name="empresa_criar"),

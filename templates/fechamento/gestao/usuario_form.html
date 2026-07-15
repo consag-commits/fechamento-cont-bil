@@ -12,13 +12,18 @@
 </nav>
 
 <div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-body p-4">
-        <h5 class="card-title mb-3">{% if novo %}Novo usuário{% else %}Editar {{ usuario.first_name|default:usuario.username }}{% endif %}</h5>
-
+  <div class="col-md-7 col-lg-6">
+    <div class="card shadow-sm border-0 rounded-4 mb-5">
+      <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4 text-center">
+        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 56px; height: 56px; font-size: 1.5rem;">
+          <i class="bi {% if novo %}bi-person-plus{% else %}bi-person-gear{% endif %}"></i>
+        </div>
+        <h4 class="card-title fw-bold text-dark mb-1">{% if novo %}Novo usuário{% else %}Editar {{ usuario.first_name|default:usuario.username }}{% endif %}</h4>
+        <p class="text-muted small">{% if novo %}Preencha os dados abaixo para cadastrar um novo usuário no sistema.{% else %}Atualize as informações e permissões deste usuário.{% endif %}</p>
+      </div>
+      <div class="card-body p-4 custom-form">
         {% if form.non_field_errors %}
-        <div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>
+        <div class="alert alert-danger py-2 small rounded-3 border-0">{{ form.non_field_errors }}</div>
         {% endif %}
 
         <form method="post" novalidate>
@@ -26,23 +31,25 @@
           {% for field in form %}
           <div class="mb-3">
             {% if field.name == 'equipes' %}
-              <label class="form-label small">{{ field.label }}</label>
+              <label class="form-label small fw-semibold text-secondary mb-2 d-block">{{ field.label }}</label>
+              <div class="d-flex flex-wrap gap-2">
               {% for cb in field %}
-              <div class="form-check">
-                {{ cb.tag }}
-                <label class="form-check-label small" for="{{ cb.id_for_label }}">{{ cb.choice_label }}</label>
-              </div>
+                <div class="form-check m-0 bg-light rounded-3 px-3 py-2 border border-transparent d-flex align-items-center gap-2" style="cursor: pointer;" onclick="document.getElementById('{{ cb.id_for_label }}').click();">
+                  <input type="checkbox" name="{{ cb.data.name }}" value="{{ cb.data.value }}" class="form-check-input m-0" id="{{ cb.id_for_label }}" {% if cb.data.selected %}checked{% endif %} onclick="event.stopPropagation();">
+                  <label class="form-check-label small fw-medium mb-0" for="{{ cb.id_for_label }}" onclick="event.stopPropagation();">{{ cb.choice_label }}</label>
+                </div>
               {% endfor %}
+              </div>
             {% elif field.field.widget.input_type == 'checkbox' %}
-              <div class="form-check">
-                <input type="checkbox" name="{{ field.name }}" class="form-check-input"
+              <div class="form-check form-switch mt-4 mb-2">
+                <input type="checkbox" name="{{ field.name }}" class="form-check-input fs-5"
                        id="id_{{ field.name }}" {% if field.value %}checked{% endif %}>
-                <label class="form-check-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                <label class="form-check-label ms-2 pt-1 fw-semibold text-dark" for="id_{{ field.name }}">{{ field.label }}</label>
               </div>
             {% else %}
-              <label class="form-label small" for="id_{{ field.name }}">{{ field.label }}</label>
+              <label class="form-label small fw-semibold text-secondary mb-1" for="id_{{ field.name }}">{{ field.label }}</label>
               {% if field.name == 'papel' %}
-                <select name="papel" class="form-select" id="id_papel">
+                <select name="papel" class="form-select bg-light border-0 rounded-3 text-secondary py-2 px-3" id="id_papel">
                   {% for value, texto in field.field.choices %}
                   <option value="{{ value }}" {% if field.value|stringformat:'s' == value %}selected{% endif %}>{{ texto }}</option>
                   {% endfor %}
@@ -50,32 +57,46 @@
               {% elif field.field.widget.input_type == 'password' %}
                 <div class="input-group">
                   <input type="password" name="{{ field.name }}"
-                         class="form-control" id="id_{{ field.name }}">
-                  <button type="button" class="btn btn-outline-secondary toggle-senha"
+                         class="form-control bg-light border-0 rounded-start-3 text-secondary py-2 px-3" id="id_{{ field.name }}">
+                  <button type="button" class="btn bg-light border-0 text-secondary rounded-end-3 toggle-senha px-3"
                           data-target="id_{{ field.name }}" tabindex="-1" aria-label="Mostrar senha">
                     <i class="bi bi-eye"></i>
                   </button>
                 </div>
+              {% elif field.name == 'data_admissao' %}
+                <input type="date" name="{{ field.name }}"
+                       class="form-control bg-light border-0 rounded-3 text-secondary py-2 px-3" id="id_{{ field.name }}"
+                       value="{{ field.value|date:'Y-m-d'|default:'' }}">
               {% else %}
                 <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}"
-                       class="form-control" id="id_{{ field.name }}"
+                       class="form-control bg-light border-0 rounded-3 text-secondary py-2 px-3" id="id_{{ field.name }}"
                        value="{{ field.value|default:'' }}">
               {% endif %}
             {% endif %}
-            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-            {% for erro in field.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+            {% if field.help_text %}<div class="form-text small text-muted mt-1">{{ field.help_text }}</div>{% endif %}
+            {% for erro in field.errors %}<div class="text-danger small mt-1 fw-medium"><i class="bi bi-exclamation-circle me-1"></i>{{ erro }}</div>{% endfor %}
           </div>
           {% endfor %}
 
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Salvar</button>
-            <a href="{% url 'usuarios_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <div class="d-flex gap-2 justify-content-center mt-5">
+            <a href="{% url 'usuarios_list' %}" class="btn btn-light text-secondary rounded-pill px-4 fw-semibold border">Cancelar</a>
+            <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">{% if novo %}Criar Usuário{% else %}Salvar Alterações{% endif %}</button>
           </div>
         </form>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+  .custom-form .form-control:focus, .custom-form .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    background-color: #fff !important;
+  }
+  .form-check.bg-light:hover {
+    background-color: #e9ecef !important;
+  }
+</style>
 
 <script>
 document.querySelectorAll('.toggle-senha').forEach(function (btn) {

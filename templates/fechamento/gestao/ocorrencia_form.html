@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Editar ocorrência{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'usuarios_list' %}">Usuários</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'usuario_perfil' funcionario.id %}">{{ funcionario.first_name|default:funcionario.username }}</a></li>
+    <li class="breadcrumb-item active">Editar ocorrência</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">Editar ocorrência</h5>
+        <form method="post">
+          {% csrf_token %}
+          <div class="row g-2 mb-2">
+            <div class="col-md-4">
+              <label class="form-label small mb-1">{{ form.data.label }}</label>
+              {{ form.data }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small mb-1">{{ form.tipo.label }}</label>
+              {{ form.tipo }}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small mb-1">{{ form.texto.label }}</label>
+            {{ form.texto }}
+            {% if form.texto.errors %}<div class="text-danger small">{{ form.texto.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg"></i> Salvar
+            </button>
+            <a href="{% url 'usuario_perfil' funcionario.id %}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

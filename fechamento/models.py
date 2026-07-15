@@ -45,6 +45,8 @@ class Perfil(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil",
     )
     papel = models.CharField(max_length=20, choices=Papel.choices, default=Papel.OPERADOR)
+    cargo = models.CharField("Cargo", max_length=120, blank=True)
+    data_admissao = models.DateField("Data de admissão", null=True, blank=True)
     equipes = models.ManyToManyField(
         "Equipe", blank=True, related_name="membros",
         help_text="Equipes que este usuário atende. Operador só vê as empresas dessas equipes.",
@@ -323,3 +325,35 @@ class IndicadorCeipim(models.Model):
     def __str__(self):
         competencia = f"{self.ano}" if self.mes == 0 else f"{self.ano}-{self.mes:02d}"
         return f"{self.empresa} · {competencia}: {self.get_status_display()}"
+
+
+# ── Ocorrências (observações do gestor sobre um funcionário) ───────────────────
+class Ocorrencia(models.Model):
+    """Observação de um gestor sobre um funcionário (bom/mau trabalho etc.)."""
+
+    class Tipo(models.TextChoices):
+        POSITIVA = "positiva", "Positiva"
+        NEUTRA = "neutra", "Neutra"
+        NEGATIVA = "negativa", "Negativa"
+
+    funcionario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ocorrencias",
+        verbose_name="Funcionário",
+    )
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ocorrencias_escritas", verbose_name="Registrada por",
+    )
+    tipo = models.CharField(max_length=20, choices=Tipo.choices, default=Tipo.NEUTRA)
+    data = models.DateField("Data do ocorrido", default=timezone.localdate)
+    texto = models.TextField("Observação")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Ocorrência"
+        verbose_name_plural = "Ocorrências"
+        ordering = ["-data", "-criado_em"]
+
+    def __str__(self):
+        return f"{self.funcionario} · {self.data}: {self.get_tipo_display()}"

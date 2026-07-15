@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Perfil — {{ funcionario.first_name|default:funcionario.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .oc-positiva { border-left: 5px solid #198754; }
+  .oc-neutra { border-left: 5px solid #6c757d; }
+  .oc-negativa { border-left: 5px solid #dc3545; }
+  .badge-positiva { background-color: #d4edda; color: #155724; }
+  .badge-neutra { background-color: #e9ecef; color: #495057; }
+  .badge-negativa { background-color: #f8d7da; color: #842029; }
+  .stat-card {
+    background-color: #ffffff;
+    border: 1px solid var(--bs-border-color-translucent);
+    border-radius: 16px;
+    padding: 1.25rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.08)!important;
+  }
+  .stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem;
+  }
+  .custom-form .form-control, .custom-form .form-select {
+    background-color: var(--bs-secondary-bg);
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    color: var(--bs-secondary-color);
+  }
+  .custom-form .form-control:focus, .custom-form .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    background-color: #fff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'usuarios_list' %}">Usuários</a></li>
+    <li class="breadcrumb-item active">{{ funcionario.first_name|default:funcionario.username }}</li>
+  </ol>
+</nav>
+
+{# ── Cabeçalho ── #}
+<div class="card shadow-sm mb-4 border-0 rounded-4">
+  <div class="card-body d-flex align-items-center gap-3 flex-wrap p-4">
+    <div class="rounded-circle bg-primary bg-gradient text-white shadow-sm d-flex align-items-center justify-content-center fw-bold"
+         style="width: 64px; height: 64px; font-size: 22px;">
+      {{ funcionario.first_name|default:funcionario.username|slice:":2"|upper }}
+    </div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h4 class="mb-0 fw-bold text-dark">{{ funcionario.first_name|default:funcionario.username }}</h4>
+        {% if funcionario.is_superuser %}<span class="badge rounded-pill bg-dark">Superusuário</span>
+        {% elif perfil.papel == 'gestor' %}<span class="badge rounded-pill bg-primary">Gestor</span>
+        {% else %}<span class="badge rounded-pill bg-secondary">Operador</span>{% endif %}
+      </div>
+      <div class="text-secondary small mt-1 fw-medium">
+        {{ perfil.cargo|default:"Cargo não informado" }}
+        {% if perfil.data_admissao %} · admitido em {{ perfil.data_admissao|date:"d/m/Y" }}{% endif %}
+        {% if tempo_de_casa %} · {{ tempo_de_casa }} de casa{% endif %}
+      </div>
+      <div class="mt-2 d-flex gap-2 flex-wrap">
+        {% if funcionario.is_superuser or perfil.papel == 'gestor' %}
+          <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle">Todas as equipes</span>
+        {% else %}
+          {% for e in perfil.equipes.all %}<span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle">{{ e.nome }}</span>
+          {% empty %}<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">Sem equipe</span>{% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    <a href="{% url 'usuario_editar' funcionario.id %}" class="btn btn-outline-primary rounded-pill px-4 fw-medium shadow-sm">
+      <i class="bi bi-pencil me-1"></i> Editar dados
+    </a>
+  </div>
+</div>
+
+{# ── Indicadores ── #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card shadow-sm h-100 d-flex flex-column justify-content-between">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-calendar-check"></i></div>
+        <div class="small fw-bold text-secondary text-uppercase" style="letter-spacing: 0.5px;">Assiduidade</div>
+      </div>
+      <div class="fs-6 fw-bold text-dark">Aguardando ponto</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card shadow-sm h-100 d-flex flex-column justify-content-between">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-clock-history"></i></div>
+        <div class="small fw-bold text-secondary text-uppercase" style="letter-spacing: 0.5px;">Pontualidade</div>
+      </div>
+      <div class="fs-6 fw-bold text-dark">Aguardando ponto</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card shadow-sm h-100 d-flex flex-column justify-content-between">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-arrow-repeat"></i></div>
+        <div class="small fw-bold text-secondary text-uppercase" style="letter-spacing: 0.5px;">Retrabalhos</div>
+      </div>
+      <div class="fs-6 fw-bold text-dark">Em breve</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card shadow-sm h-100 d-flex flex-column justify-content-between">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="stat-icon bg-danger-subtle text-danger"><i class="bi bi-exclamation-octagon"></i></div>
+        <div class="small fw-bold text-secondary text-uppercase" style="letter-spacing: 0.5px;">Ocorrências</div>
+      </div>
+      <div class="fs-2 fw-bold text-dark" style="line-height: 1;">{{ ocorrencias|length }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── Ocorrências ── #}
+<div class="card shadow-sm mb-4 border-0 rounded-4">
+  <div class="card-body p-4 custom-form">
+    <h5 class="card-title fw-bold text-dark mb-4"><i class="bi bi-journal-plus text-primary me-2"></i>Registrar ocorrência</h5>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold text-secondary mb-1">{{ form.data.label }}</label>
+          {{ form.data }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold text-secondary mb-1">{{ form.tipo.label }}</label>
+          {{ form.tipo }}
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label small fw-semibold text-secondary mb-1">{{ form.texto.label }}</label>
+        {{ form.texto }}
+        {% if form.texto.errors %}<div class="text-danger small mt-1 fw-medium">{{ form.texto.errors.0 }}</div>{% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+        <i class="bi bi-plus-lg me-1"></i> Registrar
+      </button>
+    </form>
+  </div>
+</div>
+
+<h5 class="mb-3 fw-bold text-dark"><i class="bi bi-clock-history me-2 text-secondary"></i>Histórico de ocorrências</h5>
+
+{% for o in ocorrencias %}
+<div class="card shadow-sm mb-3 border-0 rounded-4 oc-{{ o.tipo }} overflow-hidden">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+      <span class="badge rounded-pill px-3 badge-{{ o.tipo }}">{{ o.get_tipo_display }}</span>
+      <span class="small fw-medium text-secondary"><i class="bi bi-calendar-event me-1"></i>{{ o.data|date:"d/m/Y" }}</span>
+      <span class="small text-muted ms-auto fst-italic">por {{ o.autor.first_name|default:o.autor.username|default:"—" }}</span>
+      <a href="{% url 'ocorrencia_editar' o.id %}" class="btn btn-sm btn-light rounded-circle text-primary shadow-sm ms-2" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Editar">
+        <i class="bi bi-pencil"></i>
+      </a>
+      <form method="post" action="{% url 'ocorrencia_remover' o.id %}" class="d-inline"
+            onsubmit="return confirm('Tem certeza que deseja remover esta ocorrência?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-light rounded-circle text-danger shadow-sm" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Remover">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
+    </div>
+    <div class="text-dark" style="white-space: pre-wrap;">{{ o.texto }}</div>
+  </div>
+</div>
+{% empty %}
+<div class="text-center p-5 bg-white rounded-4 shadow-sm">
+  <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
+  <p class="text-muted fw-medium mb-0">Nenhuma ocorrência registrada para este usuário ainda.</p>
+</div>
+{% endfor %}
+{% endblock %}

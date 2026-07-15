@@ -3,7 +3,7 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from .models import Empresa, Equipe, Perfil
+from .models import Empresa, Equipe, Ocorrencia, Perfil
 
 
 def nome_papel(user):
@@ -44,11 +44,28 @@ class EmpresaForm(forms.ModelForm):
         return cnpj
 
 
+class OcorrenciaForm(forms.ModelForm):
+    class Meta:
+        model = Ocorrencia
+        fields = ["data", "tipo", "texto"]
+        widgets = {
+            "data": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
+            "tipo": forms.Select(attrs={"class": "form-select"}),
+            "texto": forms.Textarea(attrs={"class": "form-control", "rows": 3, "placeholder": "Descreva o ocorrido…"}),
+        }
+        labels = {"data": "Data do ocorrido", "tipo": "Tipo", "texto": "Observação"}
+
+
 class UsuarioCriarForm(forms.Form):
     nome = forms.CharField(label="Nome completo", max_length=150)
     username = forms.CharField(label="Usuário (login)", max_length=150)
     email = forms.EmailField(label="E-mail", required=False)
     papel = forms.ChoiceField(label="Papel", choices=Perfil.Papel.choices)
+    cargo = forms.CharField(label="Cargo", max_length=120, required=False)
+    data_admissao = forms.DateField(
+        label="Data de admissão", required=False,
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+    )
     equipes = forms.ModelMultipleChoiceField(
         label="Equipes que atende", queryset=Equipe.objects.all(), required=False,
         widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
@@ -67,7 +84,9 @@ class UsuarioCriarForm(forms.Form):
         user = User.objects.create_user(
             username=d["username"], email=d["email"], password=d["senha"], first_name=d["nome"],
         )
-        perfil = Perfil.objects.create(usuario=user, papel=d["papel"])
+        perfil = Perfil.objects.create(
+            usuario=user, papel=d["papel"], cargo=d["cargo"], data_admissao=d["data_admissao"],
+        )
         perfil.equipes.set(d["equipes"])
         return user
 
@@ -76,6 +95,11 @@ class UsuarioEditarForm(forms.Form):
     nome = forms.CharField(label="Nome completo", max_length=150)
     email = forms.EmailField(label="E-mail", required=False)
     papel = forms.ChoiceField(label="Papel", choices=Perfil.Papel.choices)
+    cargo = forms.CharField(label="Cargo", max_length=120, required=False)
+    data_admissao = forms.DateField(
+        label="Data de admissão", required=False,
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+    )
     equipes = forms.ModelMultipleChoiceField(
         label="Equipes que atende", queryset=Equipe.objects.all(), required=False,
         widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
@@ -102,6 +126,8 @@ class UsuarioEditarForm(forms.Form):
         user.save()
         perfil, _ = Perfil.objects.get_or_create(usuario=user)
         perfil.papel = d["papel"]
+        perfil.cargo = d["cargo"]
+        perfil.data_admissao = d["data_admissao"]
         perfil.save()
         perfil.equipes.set(d["equipes"])
         return user

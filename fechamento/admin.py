@@ -4,7 +4,7 @@ from django.contrib import admin
 
 from .models import (
     Equipe, Empresa, ModeloChecklist, Fase, Item, Ciclo, Processo, Perfil,
-    CatalogoEmpresa, CicloPrazo, IndicadorCeipim,
+    CatalogoEmpresa, CicloPrazo, IndicadorCeipim, Ocorrencia,
 )
 
 
@@ -87,3 +87,10 @@ class IndicadorCeipimAdmin(admin.ModelAdmin):
     list_filter = ["ano", "status"]
     search_fields = ["empresa__razao_social"]
     autocomplete_fields = ["empresa"]
+
+
+@admin.register(Ocorrencia)
+class OcorrenciaAdmin(admin.ModelAdmin):
+    list_display = ["funcionario", "data", "tipo", "autor", "criado_em"]
+    list_filter = ["tipo", "data"]
+    search_fields = ["funcionario__username", "funcionario__first_name", "texto"]
