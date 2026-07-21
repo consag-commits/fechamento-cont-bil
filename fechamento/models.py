@@ -357,3 +357,26 @@ class Ocorrencia(models.Model):
 
     def __str__(self):
         return f"{self.funcionario} · {self.data}: {self.get_tipo_display()}"
+
+
+# ── Entrada vinda do Portal de Sistemas ──────────────────────────────────────
+class TicketPortal(models.Model):
+    """
+    Registro dos tickets de entrada já consumidos.
+
+    O Portal assina um ticket de vida curta para trazer a pessoa até aqui já
+    logada. Guardar o identificador de cada ticket usado garante que ele valha
+    uma vez só — se alguém capturar um, não consegue reaproveitá-lo.
+    """
+
+    jti = models.CharField("Identificador do ticket", max_length=64, unique=True)
+    usuario = models.CharField(max_length=150)
+    usado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Ticket do portal"
+        verbose_name_plural = "Tickets do portal"
+        ordering = ["-usado_em"]
+
+    def __str__(self):
+        return f"{self.usuario} · {self.usado_em:%d/%m/%Y %H:%M}"

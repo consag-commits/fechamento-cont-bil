@@ -168,6 +168,10 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'login'
 
+# Segredo compartilhado com o Portal de Sistemas, usado para conferir o ticket
+# de entrada. Precisa ser idêntico nos dois lados e diferente do SECRET_KEY.
+PORTAL_SSO_SECRET = os.environ.get('PORTAL_SSO_SECRET', '')
+
 # Mapeia as tags de mensagem do Django para as classes do Bootstrap
 from django.contrib.messages import constants as messages_constants  # noqa: E402
 MESSAGE_TAGS = {messages_constants.ERROR: 'danger'}
