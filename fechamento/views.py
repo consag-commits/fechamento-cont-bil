@@ -18,8 +18,8 @@ from .forms import (
     EmpresaForm, EquipeForm, OcorrenciaForm, UsuarioCriarForm, UsuarioEditarForm, nome_papel,
 )
 from .models import (
-    CatalogoEmpresa, Ciclo, CicloPrazo, Empresa, Equipe, Fase, IndicadorCeipim,
-    ItemStatus, ModeloChecklist, Ocorrencia, Perfil, Processo,
+    AcompanhamentoLucroReal, CatalogoEmpresa, Ciclo, CicloPrazo, Empresa, Equipe,
+    Fase, IndicadorCeipim, ItemStatus, ModeloChecklist, Ocorrencia, Perfil, Processo,
 )
 from .permissions import (
     gestor_required, is_gestor, filtrar_processos, pode_ver_processo,
@@ -761,6 +761,134 @@ def ceipim_bulk_set(request):
 
     messages.success(request, f"{atualizadas} empresa(s) atualizada(s).")
     return redirect(f"{reverse('indicadores_ceipim')}?ano={ano}")
+
+
+# ── Clientes Lucro Real (função independente dos ciclos — só gestor) ──────────
+def _lucro_real_ctx(ano):
+    """Contexto compartilhado pela página e pelos fragmentos htmx.
+
+    Garante uma linha por empresa marcada como Lucro Real — assim a tabela
+    sempre reflete a lista de participantes, mesmo no primeiro acesso ao ano."""
+    empresas = Empresa.objects.filter(ativa=True, participa_lucro_real=True)
+    existentes = {a.empresa_id: a for a in AcompanhamentoLucroReal.objects.filter(ano=ano)}
+
+    proxima_ordem = max((a.ordem for a in existentes.values()), default=0)
+    for empresa in empresas:
+        if empresa.id not in existentes:
+            proxima_ordem += 1
+            existentes[empresa.id] = AcompanhamentoLucroReal.objects.create(
+                empresa=empresa, ano=ano, ordem=proxima_ordem,
+            )
+
+    linhas = (
+        AcompanhamentoLucroReal.objects
+        .filter(ano=ano, empresa__ativa=True, empresa__participa_lucro_real=True)
+        .select_related("empresa")
+    )
+    return {
+        "ano": ano,
+        "hoje": timezone.localdate(),
+        "linhas": list(linhas),
+        "apuracao_choices": AcompanhamentoLucroReal.Apuracao.choices,
+        "apuracao_dict": dict(AcompanhamentoLucroReal.Apuracao.choices),
+        "empresas_disponiveis": (
+            Empresa.objects.filter(ativa=True, participa_lucro_real=False).order_by("razao_social")
+        ),
+    }
+
+
+@gestor_required
+def lucro_real(request):
+    """Acompanhamento dos clientes de Lucro Real (só gestor)."""
+    hoje = timezone.localdate()
+    try:
+        ano = int(request.GET.get("ano", hoje.year))
+    except (ValueError, TypeError):
+        ano = hoje.year
+
+    return render(request, "fechamento/lucro_real/index.html", {
+        "anos_disponiveis": [hoje.year - 1, hoje.year, hoje.year + 1],
+        **_lucro_real_ctx(ano),
+    })
+
+
+def _lucro_real_fragmento(request, ano=None):
+    """Redesenha a tabela inteira (usado pelos htmx que mudam a lista)."""
+    return render(
+        request, "fechamento/lucro_real/_conteudo.html",
+        _lucro_real_ctx(ano if ano is not None else _ano_do_post(request)),
+    )
+
+
+@gestor_required
+@require_POST
+def lucro_real_empresa_adicionar(request):
+    """htmx: inclui uma empresa no acompanhamento de Lucro Real."""
+    empresa = get_object_or_404(Empresa, pk=request.POST.get("empresa_id"), ativa=True)
+    empresa.participa_lucro_real = True
+    empresa.save(update_fields=["participa_lucro_real"])
+    return _lucro_real_fragmento(request)
+
+
+@gestor_required
+@require_POST
+def lucro_real_empresa_remover(request, empresa_id):
+    """htmx: tira a empresa da lista (não apaga o que já foi preenchido)."""
+    empresa = get_object_or_404(Empresa, pk=empresa_id)
+    empresa.participa_lucro_real = False
+    empresa.save(update_fields=["participa_lucro_real"])
+    return _lucro_real_fragmento(request)
+
+
+@gestor_required
+@require_POST
+def lucro_real_set_campo(request, empresa_id, ano):
+    """htmx: grava um campo de uma linha (apuração, atualizações ou previsão)."""
+    linha = get_object_or_404(AcompanhamentoLucroReal, empresa_id=empresa_id, ano=ano)
+    campo = request.POST.get("campo")
+    valor = request.POST.get("valor", "").strip()
+
+    if campo == "apuracao":
+        if valor not in AcompanhamentoLucroReal.Apuracao.values:
+            return HttpResponse("Apuração inválida.", status=400)
+        linha.apuracao = valor
+    elif campo == "atualizacoes":
+        linha.atualizacoes = valor[:255]
+    elif campo == "previsao_entrega":
+        data = parse_date(valor) if valor else None
+        if valor and data is None:
+            return HttpResponse("Data inválida.", status=400)
+        linha.previsao_entrega = data
+    else:
+        return HttpResponse("Campo inválido.", status=400)
+
+    linha.save(update_fields=[campo, "atualizado_em"])
+    return HttpResponse(status=204)
+
+
+@gestor_required
+@require_POST
+def lucro_real_mover(request, empresa_id, ano):
+    """htmx: sobe ou desce a linha na sequência, trocando a ordem com a vizinha."""
+    linha = get_object_or_404(AcompanhamentoLucroReal, empresa_id=empresa_id, ano=ano)
+    subindo = request.POST.get("direcao") == "cima"
+
+    irmas = list(
+        AcompanhamentoLucroReal.objects
+        .filter(ano=ano, empresa__ativa=True, empresa__participa_lucro_real=True)
+    )
+    posicao = next((i for i, a in enumerate(irmas) if a.pk == linha.pk), None)
+    if posicao is not None:
+        vizinha_pos = posicao - 1 if subindo else posicao + 1
+        if 0 <= vizinha_pos < len(irmas):
+            # A ordem gravada pode estar empatada (tudo 0); renumerar garante a troca.
+            for i, a in enumerate(irmas, start=1):
+                a.ordem = i
+            atual, vizinha = irmas[posicao], irmas[vizinha_pos]
+            atual.ordem, vizinha.ordem = vizinha.ordem, atual.ordem
+            AcompanhamentoLucroReal.objects.bulk_update(irmas, ["ordem"])
+
+    return _lucro_real_fragmento(request, ano)
 
 
 # ── Gestão › Perfil do funcionário (hub) e Ocorrências — só gestor ────────────

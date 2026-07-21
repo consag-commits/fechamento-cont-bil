@@ -23,6 +23,22 @@ urlpatterns = [
         views.ceipim_empresa_remover, name="ceipim_empresa_remover",
     ),
 
+    # Clientes Lucro Real (função independente dos ciclos)
+    path("lucro-real/", views.lucro_real, name="lucro_real"),
+    path("lucro-real/empresas/adicionar/", views.lucro_real_empresa_adicionar, name="lucro_real_empresa_adicionar"),
+    path(
+        "lucro-real/empresas/<int:empresa_id>/remover/",
+        views.lucro_real_empresa_remover, name="lucro_real_empresa_remover",
+    ),
+    path(
+        "lucro-real/<int:empresa_id>/<int:ano>/campo/",
+        views.lucro_real_set_campo, name="lucro_real_set_campo",
+    ),
+    path(
+        "lucro-real/<int:empresa_id>/<int:ano>/mover/",
+        views.lucro_real_mover, name="lucro_real_mover",
+    ),
+
     # Gestão (restrito a gestores)
     path("gestao/", views.gestao_home, name="gestao_home"),
     path("gestao/ciclos/abrir/", views.ciclo_abrir, name="ciclo_abrir"),

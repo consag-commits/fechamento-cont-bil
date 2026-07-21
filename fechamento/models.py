@@ -86,6 +86,10 @@ class Empresa(models.Model):
         "Participa do CEIPIM", default=False,
         help_text="Entra na lista de Indicadores CEIPIM (função independente dos ciclos).",
     )
+    participa_lucro_real = models.BooleanField(
+        "Cliente Lucro Real", default=False,
+        help_text="Entra no acompanhamento de Clientes Lucro Real (função independente dos ciclos).",
+    )
 
     class Meta:
         verbose_name = "Empresa"
@@ -325,6 +329,48 @@ class IndicadorCeipim(models.Model):
     def __str__(self):
         competencia = f"{self.ano}" if self.mes == 0 else f"{self.ano}-{self.mes:02d}"
         return f"{self.empresa} · {competencia}: {self.get_status_display()}"
+
+
+# ── Clientes Lucro Real (função independente dos ciclos) ──────────────────────
+class AcompanhamentoLucroReal(models.Model):
+    """Linha do acompanhamento de um cliente Lucro Real num ano.
+
+    Reproduz a planilha "Clientes Lucro Real": regime de apuração, o que ainda
+    falta e quando a entrega está prevista. Não depende de Ciclo/Processo — só
+    reaproveita o cadastro de Empresa."""
+
+    class Apuracao(models.TextChoices):
+        NA = "na", "N/A"
+        MENSAL = "mensal", "Mensal"
+        TRIMESTRAL = "trimestral", "Trimestral"
+        RECEITA_BRUTA = "receita_bruta", "Receita bruta"
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="lucro_real")
+    ano = models.PositiveIntegerField("Ano")
+    ordem = models.PositiveIntegerField(
+        "Sequência", default=0,
+        help_text="Ordem de exibição na tabela (a coluna SEQUÊNCIA da planilha).",
+    )
+    apuracao = models.CharField(
+        "Apuração", max_length=20, choices=Apuracao.choices, default=Apuracao.NA,
+    )
+    atualizacoes = models.CharField(
+        "Atualizações", max_length=255, blank=True,
+        help_text="O que falta / quem está trabalhando. Ex.: 'FALTA O CUSTO'.",
+    )
+    previsao_entrega = models.DateField("Previsão de entrega", null=True, blank=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Cliente Lucro Real"
+        verbose_name_plural = "Clientes Lucro Real"
+        ordering = ["ordem", "empresa__razao_social"]
+        constraints = [
+            models.UniqueConstraint(fields=["empresa", "ano"], name="uniq_lucroreal_empresa_ano"),
+        ]
+
+    def __str__(self):
+        return f"{self.empresa} · {self.ano}: {self.get_apuracao_display()}"
 
 
 # ── Ocorrências (observações do gestor sobre um funcionário) ───────────────────

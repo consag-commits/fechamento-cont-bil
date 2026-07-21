@@ -1,0 +1,127 @@
+{% load fechamento_extras %}
+
+{# Formulário de adicionar empresa #}
+<form hx-post="{% url 'lucro_real_empresa_adicionar' %}" hx-target="#lucro-real-container" hx-swap="innerHTML"
+      class="card shadow-sm mb-3">
+  <input type="hidden" name="ano" value="{{ ano }}">
+  <div class="card-body py-2 px-3 d-flex align-items-center gap-2 flex-wrap">
+    <label class="small text-muted mb-0 me-1">Adicionar empresa:</label>
+    <div style="min-width: 320px;">
+      <select name="empresa_id" id="lr-empresa-select" class="form-select form-select-sm" required placeholder="Digite a empresa para buscar...">
+        <option value="">— selecione —</option>
+      {% for e in empresas_disponiveis %}
+        <option value="{{ e.id }}">{{ e.razao_social }}</option>
+      {% empty %}
+        <option disabled>Todas as empresas ativas já estão na lista</option>
+      {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary" {% if not empresas_disponiveis %}disabled{% endif %}>
+      <i class="bi bi-plus-lg"></i> Adicionar
+    </button>
+    <span class="small text-muted ms-auto">{{ linhas|length }} cliente(s) na lista</span>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light small text-uppercase">
+        <tr>
+          <th class="text-center col-seq">Sequência</th>
+          <th>Empresa</th>
+          <th class="text-center" style="width: 170px;">Apuração em {{ ano }}</th>
+          <th style="width: 34%;">Atualizações</th>
+          <th class="text-center" style="width: 190px;">Previsão de entrega</th>
+          <th style="width: 80px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in linhas %}
+        <tr>
+          <td class="text-center text-muted small fw-semibold">{{ forloop.counter }}</td>
+
+          <td class="small fw-semibold">{{ linha.empresa.razao_social }}</td>
+
+          <td class="text-center">
+            <div class="dropdown">
+              <button class="dropdown-toggle lr-badge apuracao-{{ linha.apuracao }}" type="button"
+                      data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false"
+                      id="ap-{{ linha.empresa.id }}">
+                {{ apuracao_dict|dictkey:linha.apuracao }}
+              </button>
+              <ul class="dropdown-menu shadow-sm" style="min-width: 160px;">
+                {% for value, label in apuracao_choices %}
+                <li>
+                  <button type="button" class="dropdown-item small py-1"
+                          hx-post="{% url 'lucro_real_set_campo' linha.empresa.id ano %}"
+                          hx-vals='{"campo": "apuracao", "valor": "{{ value }}"}'
+                          hx-swap="none"
+                          onclick="lrUpdateBadge('ap-{{ linha.empresa.id }}', '{{ value }}', '{{ label }}')">
+                    <span class="lr-badge apuracao-{{ value }} d-inline-block text-center w-100">{{ label }}</span>
+                  </button>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </td>
+
+          <td>
+            <input type="text" class="celula-input" name="valor" value="{{ linha.atualizacoes }}"
+                   placeholder="O que falta…" maxlength="255"
+                   hx-post="{% url 'lucro_real_set_campo' linha.empresa.id ano %}"
+                   hx-vals='{"campo": "atualizacoes"}'
+                   hx-trigger="change, keyup[key=='Enter']"
+                   hx-swap="none">
+          </td>
+
+          <td class="text-center">
+            <div class="d-flex align-items-center justify-content-center gap-2">
+              <input type="date" class="celula-input" name="valor" style="width: 140px;"
+                     value="{{ linha.previsao_entrega|date:'Y-m-d' }}"
+                     hx-post="{% url 'lucro_real_set_campo' linha.empresa.id ano %}"
+                     hx-vals='{"campo": "previsao_entrega"}'
+                     hx-trigger="change"
+                     hx-swap="none">
+              <span class="small {% if linha.previsao_entrega|data_atrasada %}previsao-atrasada{% else %}text-muted{% endif %}">
+                {{ linha.previsao_entrega|data_relativa }}
+              </span>
+            </div>
+          </td>
+
+          <td class="text-end text-nowrap">
+            <button type="button" class="btn btn-sm btn-link text-muted p-0 px-1"
+                    hx-post="{% url 'lucro_real_mover' linha.empresa.id ano %}"
+                    hx-vals='{"direcao": "cima"}'
+                    hx-target="#lucro-real-container" hx-swap="innerHTML"
+                    title="Subir" {% if forloop.first %}disabled{% endif %}>
+              <i class="bi bi-arrow-up"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-link text-muted p-0 px-1"
+                    hx-post="{% url 'lucro_real_mover' linha.empresa.id ano %}"
+                    hx-vals='{"direcao": "baixo"}'
+                    hx-target="#lucro-real-container" hx-swap="innerHTML"
+                    title="Descer" {% if forloop.last %}disabled{% endif %}>
+              <i class="bi bi-arrow-down"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1"
+                    hx-post="{% url 'lucro_real_empresa_remover' linha.empresa.id %}"
+                    hx-vals='{"ano": "{{ ano }}"}'
+                    hx-target="#lucro-real-container" hx-swap="innerHTML"
+                    hx-confirm="Remover {{ linha.empresa.razao_social }} da lista de Lucro Real? (o que já foi preenchido não é apagado)"
+                    title="Remover da lista">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted small py-4">
+            Nenhum cliente na lista ainda — adicione acima.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

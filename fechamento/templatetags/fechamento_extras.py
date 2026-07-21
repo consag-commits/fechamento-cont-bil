@@ -1,6 +1,7 @@
 """Filtros de template para exibir status de itens do checklist."""
 
 from django import template
+from django.utils import timezone
 
 register = template.Library()
 
@@ -53,3 +54,24 @@ _MESES_ABREV = {
 @register.filter
 def mes_abrev(mes):
     return _MESES_ABREV.get(int(mes), str(mes))
+
+
+@register.filter
+def data_relativa(data):
+    """Data em linguagem do dia a dia: 'Hoje', 'Amanhã', 'Ontem' ou dd/mm."""
+    if not data:
+        return "—"
+    dias = (data - timezone.localdate()).days
+    if dias == 0:
+        return "Hoje"
+    if dias == 1:
+        return "Amanhã"
+    if dias == -1:
+        return "Ontem"
+    return data.strftime("%d/%m")
+
+
+@register.filter
+def data_atrasada(data):
+    """True se a previsão já passou (para destacar em vermelho)."""
+    return bool(data) and data < timezone.localdate()
