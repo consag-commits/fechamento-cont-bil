@@ -90,26 +90,31 @@
           {% endfor %}
           {% else %}
           {# Sem apuração trimestral, as 4 colunas viram uma situação só. #}
-          <td class="text-center celula-geral" colspan="4">
-            <div class="dropdown">
-              <button class="dropdown-toggle lr-badge tri-{{ linha.status_geral }}" type="button"
-                      data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false"
-                      id="geral-{{ linha.empresa.id }}">
-                {{ trimestre_dict|dictkey:linha.status_geral }}
-              </button>
-              <ul class="dropdown-menu shadow-sm" style="min-width: 150px;">
-                {% for value, label in trimestre_choices %}
-                <li>
-                  <button type="button" class="dropdown-item small py-1"
-                          hx-post="{% url 'lucro_real_set_campo' linha.empresa.id ano %}"
-                          hx-vals='{"campo": "status_geral", "valor": "{{ value }}"}'
-                          hx-swap="none"
-                          onclick="lrUpdateBadge('geral-{{ linha.empresa.id }}', '{{ value }}', '{{ label }}', 'tri-')">
-                    <span class="lr-badge tri-{{ value }} d-inline-block text-center w-100">{{ label }}</span>
-                  </button>
-                </li>
-                {% endfor %}
-              </ul>
+          <td class="text-center px-2 align-middle" colspan="4">
+            <div class="d-flex align-items-center justify-content-center bg-light border border-light-subtle rounded py-1" style="min-height: 34px;">
+              <span class="text-muted me-2" style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">
+                <i class="bi bi-calendar3 me-1"></i>Único / Anual:
+              </span>
+              <div class="dropdown">
+                <button class="dropdown-toggle lr-badge tri-{{ linha.status_geral }}" type="button"
+                        data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false"
+                        id="geral-{{ linha.empresa.id }}">
+                  {{ trimestre_dict|dictkey:linha.status_geral }}
+                </button>
+                <ul class="dropdown-menu shadow-sm" style="min-width: 150px;">
+                  {% for value, label in trimestre_choices %}
+                  <li>
+                    <button type="button" class="dropdown-item small py-1"
+                            hx-post="{% url 'lucro_real_set_campo' linha.empresa.id ano %}"
+                            hx-vals='{"campo": "status_geral", "valor": "{{ value }}"}'
+                            hx-swap="none"
+                            onclick="lrUpdateBadge('geral-{{ linha.empresa.id }}', '{{ value }}', '{{ label }}', 'tri-')">
+                      <span class="lr-badge tri-{{ value }} d-inline-block text-center w-100">{{ label }}</span>
+                    </button>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
             </div>
           </td>
           {% endif %}
