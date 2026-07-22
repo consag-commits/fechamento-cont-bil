@@ -93,7 +93,7 @@ class IndicadorCeipimAdmin(admin.ModelAdmin):
 class AcompanhamentoLucroRealAdmin(admin.ModelAdmin):
     list_display = [
         "empresa", "ano", "ordem", "apuracao",
-        "status_t1", "status_t2", "status_t3", "status_t4",
+        "status_t1", "status_t2", "status_t3", "status_t4", "status_geral",
         "atualizacoes", "previsao_entrega",
     ]
     list_filter = ["ano", "apuracao", "status_t1", "status_t2", "status_t3", "status_t4"]

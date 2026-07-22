@@ -854,9 +854,13 @@ def lucro_real_set_campo(request, empresa_id, ano):
         if valor not in AcompanhamentoLucroReal.Apuracao.values:
             return HttpResponse("Apuração inválida.", status=400)
         linha.apuracao = valor
-    elif campo in AcompanhamentoLucroReal.CAMPOS_TRIMESTRE:
+        # Trocar a apuração troca o formato da linha (4 trimestres ou situação
+        # única), então aqui a tabela é redesenhada em vez de só salvar.
+        linha.save(update_fields=["apuracao", "atualizado_em"])
+        return _lucro_real_fragmento(request, ano)
+    elif campo in AcompanhamentoLucroReal.CAMPOS_STATUS:
         if valor not in AcompanhamentoLucroReal.StatusTrimestre.values:
-            return HttpResponse("Status de trimestre inválido.", status=400)
+            return HttpResponse("Status inválido.", status=400)
         setattr(linha, campo, valor)
     elif campo == "atualizacoes":
         linha.atualizacoes = valor[:255]

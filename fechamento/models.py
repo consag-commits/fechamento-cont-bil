@@ -376,6 +376,12 @@ class AcompanhamentoLucroReal(models.Model):
         "4º trimestre", max_length=20,
         choices=StatusTrimestre.choices, default=StatusTrimestre.PENDENTE,
     )
+    status_geral = models.CharField(
+        "Situação", max_length=20,
+        choices=StatusTrimestre.choices, default=StatusTrimestre.PENDENTE,
+        help_text="Usado quando a apuração não é trimestral — aí os quatro "
+                  "trimestres não fazem sentido e a empresa tem uma situação só.",
+    )
     atualizacoes = models.CharField(
         "Atualizações", max_length=255, blank=True,
         help_text="O que falta / quem está trabalhando. Ex.: 'FALTA O CUSTO'.",
@@ -383,8 +389,9 @@ class AcompanhamentoLucroReal(models.Model):
     previsao_entrega = models.DateField("Previsão de entrega", null=True, blank=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
-    # Nomes dos campos de trimestre — a view valida contra esta lista.
+    # Campos de status que a tela pode gravar — a view valida contra esta lista.
     CAMPOS_TRIMESTRE = ("status_t1", "status_t2", "status_t3", "status_t4")
+    CAMPOS_STATUS = CAMPOS_TRIMESTRE + ("status_geral",)
 
     class Meta:
         verbose_name = "Cliente Lucro Real"
@@ -396,6 +403,12 @@ class AcompanhamentoLucroReal(models.Model):
 
     def __str__(self):
         return f"{self.empresa} · {self.ano}: {self.get_apuracao_display()}"
+
+    @property
+    def usa_trimestres(self) -> bool:
+        """Só quem apura por trimestre tem as quatro colunas; o resto tem uma
+        situação única."""
+        return self.apuracao == self.Apuracao.TRIMESTRAL
 
     @property
     def trimestres(self):
