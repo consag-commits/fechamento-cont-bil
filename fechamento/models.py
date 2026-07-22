@@ -345,6 +345,12 @@ class AcompanhamentoLucroReal(models.Model):
         TRIMESTRAL = "trimestral", "Trimestral"
         RECEITA_BRUTA = "receita_bruta", "Receita bruta"
 
+    class StatusTrimestre(models.TextChoices):
+        PENDENTE = "pendente", "Pendente"
+        ANDAMENTO = "andamento", "Em andamento"
+        CONCLUIDO = "concluido", "Concluído"
+        NA = "na", "N/A"
+
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="lucro_real")
     ano = models.PositiveIntegerField("Ano")
     ordem = models.PositiveIntegerField(
@@ -354,12 +360,31 @@ class AcompanhamentoLucroReal(models.Model):
     apuracao = models.CharField(
         "Apuração", max_length=20, choices=Apuracao.choices, default=Apuracao.NA,
     )
+    status_t1 = models.CharField(
+        "1º trimestre", max_length=20,
+        choices=StatusTrimestre.choices, default=StatusTrimestre.PENDENTE,
+    )
+    status_t2 = models.CharField(
+        "2º trimestre", max_length=20,
+        choices=StatusTrimestre.choices, default=StatusTrimestre.PENDENTE,
+    )
+    status_t3 = models.CharField(
+        "3º trimestre", max_length=20,
+        choices=StatusTrimestre.choices, default=StatusTrimestre.PENDENTE,
+    )
+    status_t4 = models.CharField(
+        "4º trimestre", max_length=20,
+        choices=StatusTrimestre.choices, default=StatusTrimestre.PENDENTE,
+    )
     atualizacoes = models.CharField(
         "Atualizações", max_length=255, blank=True,
         help_text="O que falta / quem está trabalhando. Ex.: 'FALTA O CUSTO'.",
     )
     previsao_entrega = models.DateField("Previsão de entrega", null=True, blank=True)
     atualizado_em = models.DateTimeField(auto_now=True)
+
+    # Nomes dos campos de trimestre — a view valida contra esta lista.
+    CAMPOS_TRIMESTRE = ("status_t1", "status_t2", "status_t3", "status_t4")
 
     class Meta:
         verbose_name = "Cliente Lucro Real"
@@ -371,6 +396,14 @@ class AcompanhamentoLucroReal(models.Model):
 
     def __str__(self):
         return f"{self.empresa} · {self.ano}: {self.get_apuracao_display()}"
+
+    @property
+    def trimestres(self):
+        """[{'numero', 'campo', 'status'}] — para montar as 4 colunas na tela."""
+        return [
+            {"numero": n, "campo": f"status_t{n}", "status": getattr(self, f"status_t{n}")}
+            for n in range(1, 5)
+        ]
 
 
 # ── Ocorrências (observações do gestor sobre um funcionário) ───────────────────

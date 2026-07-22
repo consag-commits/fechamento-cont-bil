@@ -30,9 +30,10 @@
         <tr>
           <th class="text-center col-seq">Sequência</th>
           <th>Empresa</th>
-          <th class="text-center" style="width: 170px;">Apuração em {{ ano }}</th>
-          <th style="width: 34%;">Atualizações</th>
-          <th class="text-center" style="width: 190px;">Previsão de entrega</th>
+          <th class="text-center" style="width: 150px;">Apuração em {{ ano }}</th>
+          {% for n in "1234" %}<th class="text-center col-tri">{{ n }}º TRI</th>{% endfor %}
+          <th style="width: 22%;">Atualizações</th>
+          <th class="text-center" style="width: 180px;">Previsão de entrega</th>
           <th style="width: 80px;"></th>
         </tr>
       </thead>
@@ -65,6 +66,31 @@
               </ul>
             </div>
           </td>
+
+          {% for tri in linha.trimestres %}
+          <td class="text-center">
+            <div class="dropdown">
+              <button class="dropdown-toggle lr-badge tri-{{ tri.status }}" type="button"
+                      data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false"
+                      id="tri-{{ linha.empresa.id }}-{{ tri.numero }}">
+                {{ trimestre_dict|dictkey:tri.status }}
+              </button>
+              <ul class="dropdown-menu shadow-sm" style="min-width: 150px;">
+                {% for value, label in trimestre_choices %}
+                <li>
+                  <button type="button" class="dropdown-item small py-1"
+                          hx-post="{% url 'lucro_real_set_campo' linha.empresa.id ano %}"
+                          hx-vals='{"campo": "{{ tri.campo }}", "valor": "{{ value }}"}'
+                          hx-swap="none"
+                          onclick="lrUpdateBadge('tri-{{ linha.empresa.id }}-{{ tri.numero }}', '{{ value }}', '{{ label }}', 'tri-')">
+                    <span class="lr-badge tri-{{ value }} d-inline-block text-center w-100">{{ label }}</span>
+                  </button>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </td>
+          {% endfor %}
 
           <td>
             <input type="text" class="celula-input" name="valor" value="{{ linha.atualizacoes }}"
@@ -116,7 +142,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="text-center text-muted small py-4">
+          <td colspan="10" class="text-center text-muted small py-4">
             Nenhum cliente na lista ainda — adicione acima.
           </td>
         </tr>

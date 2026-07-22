@@ -21,6 +21,14 @@
   .apuracao-trimestral { background-color: #e2d9f3; color: #493267; }
   .apuracao-receita_bruta { background-color: #fff3cd; color: #856404; }
 
+  /* Andamento do trimestre — verde só quando concluído, para o olho achar rápido */
+  .tri-pendente { background-color: #f1f3f5; color: #868e96; }
+  .tri-andamento { background-color: #fff3cd; color: #856404; }
+  .tri-concluido { background-color: #d4edda; color: #155724; }
+  .tri-na { background-color: #f8f9fa; color: #ced4da; }
+
+  .col-tri { width: 118px; }
+
   /* Campos editáveis direto na célula: só viram "input" ao focar */
   .celula-input {
     border: 1px solid transparent;
@@ -43,6 +51,12 @@
   .flash-success { animation: flash-success 0.5s ease-out; }
 
   .col-seq { width: 70px; }
+
+  /* Com as 4 colunas de trimestre a tabela ficou larga: alarga o container
+     nesta tela para evitar rolagem horizontal em monitores normais. */
+  @media (min-width: 992px) {
+    .container { max-width: 98% !important; }
+  }
 </style>
 {% endblock %}
 
@@ -72,10 +86,11 @@
 <script>
 (function () {
   // Troca o rótulo do badge assim que a pessoa escolhe, sem esperar o htmx.
-  window.lrUpdateBadge = function (btnId, valor, label) {
+  // 'prefixo' escolhe a paleta: apuracao-* (regime) ou tri-* (trimestre).
+  window.lrUpdateBadge = function (btnId, valor, label, prefixo) {
     var btn = document.getElementById(btnId);
     if (!btn) return;
-    btn.className = 'dropdown-toggle lr-badge apuracao-' + valor;
+    btn.className = 'dropdown-toggle lr-badge ' + (prefixo || 'apuracao-') + valor;
     btn.textContent = label;
     btn.classList.remove('flash-success');
     void btn.offsetWidth;  // força o reflow para reiniciar a animação

@@ -791,6 +791,8 @@ def _lucro_real_ctx(ano):
         "linhas": list(linhas),
         "apuracao_choices": AcompanhamentoLucroReal.Apuracao.choices,
         "apuracao_dict": dict(AcompanhamentoLucroReal.Apuracao.choices),
+        "trimestre_choices": AcompanhamentoLucroReal.StatusTrimestre.choices,
+        "trimestre_dict": dict(AcompanhamentoLucroReal.StatusTrimestre.choices),
         "empresas_disponiveis": (
             Empresa.objects.filter(ativa=True, participa_lucro_real=False).order_by("razao_social")
         ),
@@ -852,6 +854,10 @@ def lucro_real_set_campo(request, empresa_id, ano):
         if valor not in AcompanhamentoLucroReal.Apuracao.values:
             return HttpResponse("Apuração inválida.", status=400)
         linha.apuracao = valor
+    elif campo in AcompanhamentoLucroReal.CAMPOS_TRIMESTRE:
+        if valor not in AcompanhamentoLucroReal.StatusTrimestre.values:
+            return HttpResponse("Status de trimestre inválido.", status=400)
+        setattr(linha, campo, valor)
     elif campo == "atualizacoes":
         linha.atualizacoes = valor[:255]
     elif campo == "previsao_entrega":
