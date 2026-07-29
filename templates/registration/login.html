@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Entrar{% endblock %}
 
@@ -7,7 +8,10 @@
   <div class="col-md-4">
     <div class="card shadow-sm mt-5">
       <div class="card-body p-4">
-        <h5 class="card-title text-center mb-3">Fechamento Contábil</h5>
+        <div class="text-center mb-3">
+          <img src="{% static 'img/consag_logo.png' %}" alt="CONSAG" style="height: 56px; width: auto;">
+        </div>
+        <h5 class="card-title text-center mb-3">Fechamento <span class="text-primary">Contábil</span></h5>
         {% if form.errors %}
         <div class="alert alert-danger py-2 small">Usuário ou senha inválidos.</div>
         {% endif %}

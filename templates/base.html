@@ -29,7 +29,7 @@
     <div class="container">
       <div class="d-flex align-items-center gap-4">
         <a class="navbar-brand me-3 d-flex align-items-center gap-2 text-white" href="{% url 'index' %}">
-          <i class="bi bi-check2-square text-primary fs-4"></i> <span class="fw-bold tracking-tight text-white fs-5">Fechamento <span class="text-primary">Contábil</span></span>
+          <img src="{% static 'img/consag_logo.png' %}" alt="CONSAG" style="height: 34px; width: auto;"> <span class="fw-bold tracking-tight text-white fs-5">Fechamento <span class="text-primary">Contábil</span></span>
         </a>
         {% if user.is_authenticated %}
         <div class="d-none d-lg-flex gap-1">
