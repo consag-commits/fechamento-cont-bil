@@ -684,9 +684,9 @@ def _ceipim_ctx(ano):
     }
 
 
-@gestor_required
+@login_required
 def indicadores_ceipim(request):
-    """Tabela de status CEIPIM por empresa x mês (só gestor; não depende de Ciclo/Processo/equipe)."""
+    """Tabela de status CEIPIM por empresa x mês (não depende de Ciclo/Processo/equipe)."""
     hoje = timezone.localdate()
     try:
         ano = int(request.GET.get("ano", hoje.year))
@@ -704,7 +704,7 @@ def _ano_do_post(request):
     return int(valor) if valor.isdigit() else timezone.localdate().year
 
 
-@gestor_required
+@login_required
 @require_POST
 def ceipim_empresa_adicionar(request):
     """htmx: inclui uma empresa na lista de Indicadores CEIPIM."""
@@ -714,7 +714,7 @@ def ceipim_empresa_adicionar(request):
     return render(request, "fechamento/ceipim/_conteudo.html", _ceipim_ctx(_ano_do_post(request)))
 
 
-@gestor_required
+@login_required
 @require_POST
 def ceipim_empresa_remover(request, empresa_id):
     """htmx: remove uma empresa da lista de Indicadores CEIPIM (não apaga os dados já gravados)."""
@@ -724,7 +724,7 @@ def ceipim_empresa_remover(request, empresa_id):
     return render(request, "fechamento/ceipim/_conteudo.html", _ceipim_ctx(_ano_do_post(request)))
 
 
-@gestor_required
+@login_required
 @require_POST
 def ceipim_set_status(request, empresa_id, ano, mes):
     """htmx: define o status de uma célula (empresa x competência)."""
@@ -738,7 +738,7 @@ def ceipim_set_status(request, empresa_id, ano, mes):
     return HttpResponse(status=204)
 
 
-@gestor_required
+@login_required
 @require_POST
 def ceipim_bulk_set(request):
     """Aplica um status a várias empresas de uma vez, para uma competência."""
@@ -799,9 +799,9 @@ def _lucro_real_ctx(ano):
     }
 
 
-@gestor_required
+@login_required
 def lucro_real(request):
-    """Acompanhamento dos clientes de Lucro Real (só gestor)."""
+    """Acompanhamento dos clientes de Lucro Real."""
     hoje = timezone.localdate()
     try:
         ano = int(request.GET.get("ano", hoje.year))
@@ -822,7 +822,7 @@ def _lucro_real_fragmento(request, ano=None):
     )
 
 
-@gestor_required
+@login_required
 @require_POST
 def lucro_real_empresa_adicionar(request):
     """htmx: inclui uma empresa no acompanhamento de Lucro Real."""
@@ -832,7 +832,7 @@ def lucro_real_empresa_adicionar(request):
     return _lucro_real_fragmento(request)
 
 
-@gestor_required
+@login_required
 @require_POST
 def lucro_real_empresa_remover(request, empresa_id):
     """htmx: tira a empresa da lista (não apaga o que já foi preenchido)."""
@@ -842,7 +842,7 @@ def lucro_real_empresa_remover(request, empresa_id):
     return _lucro_real_fragmento(request)
 
 
-@gestor_required
+@login_required
 @require_POST
 def lucro_real_set_campo(request, empresa_id, ano):
     """htmx: grava um campo de uma linha (apuração, atualizações ou previsão)."""
@@ -876,7 +876,7 @@ def lucro_real_set_campo(request, empresa_id, ano):
     return HttpResponse(status=204)
 
 
-@gestor_required
+@login_required
 @require_POST
 def lucro_real_mover(request, empresa_id, ano):
     """htmx: sobe ou desce a linha na sequência, trocando a ordem com a vizinha."""
