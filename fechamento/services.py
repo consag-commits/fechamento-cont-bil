@@ -53,7 +53,7 @@ def resumo_processo(processo, fases, prazos, hoje=None):
         scored = [s for s in statuses if s.item.pontua and s.status != ItemStatus.Status.NA]
         feitos = [s for s in scored if s.concluido]
         pendentes = [s for s in scored if not s.concluido]
-        aguardando = [s for s in scored if s.status == ItemStatus.Status.AGUARDANDO]
+        aguardando = [s for s in statuses if s.status == ItemStatus.Status.AGUARDANDO]
         total = len(scored)
         deadline = prazos.get(fase.id)
         atrasada = bool(deadline) and hoje > deadline and len(pendentes) > 0
