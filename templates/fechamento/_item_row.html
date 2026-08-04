@@ -16,6 +16,12 @@
   {% endif %}
 
   <div class="d-flex gap-2 ms-2">
+    <button type="button" title="Aguardando Cliente (clique para alternar)"
+            class="btn btn-sm {% if s.status == 'aguardando' %}btn-warning shadow-sm{% else %}btn-light text-warning{% endif %} rounded-pill px-3 fw-bold"
+            hx-post="{% url 'item_set' s.id %}" hx-vals='{"status": "aguardando", "toggle": "1"}'
+            hx-target="#item-{{ s.id }}" hx-swap="outerHTML">
+      <i class="bi bi-hourglass-split"></i>
+    </button>
     <button type="button" title="Feito (clique para alternar)" aria-label="Marcar como feito"
             class="btn btn-sm {% if s.status == 'feito' %}btn-success shadow-sm{% else %}btn-light text-success{% endif %} rounded-pill px-3 fw-bold"
             hx-post="{% url 'item_set' s.id %}" hx-vals='{"status": "feito", "toggle": "1"}'

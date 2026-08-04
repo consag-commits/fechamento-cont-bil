@@ -51,6 +51,7 @@ def _equipe_ctx(request):
     return {"pode_filtrar": True, "equipe_sel": equipe_sel, "equipes_filtro": list(Equipe.objects.all())}
 
 _PEND = ItemStatus.Status.PENDENTE
+_AGUARDANDO = ItemStatus.Status.AGUARDANDO
 _DONE = ItemStatus.Status.FEITO
 _MANUAL = ItemStatus.Status.MANUAL
 _NA = ItemStatus.Status.NA

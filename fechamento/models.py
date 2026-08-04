@@ -266,6 +266,7 @@ class ItemStatus(models.Model):
 
     class Status(models.TextChoices):
         PENDENTE = "pendente", "Pendente"
+        AGUARDANDO = "aguardando", "Aguardando"
         FEITO = "feito", "Feito"
         MANUAL = "manual", "Manual"
         NA = "na", "N/A"
