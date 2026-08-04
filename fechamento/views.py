@@ -89,7 +89,7 @@ def ciclo_consolidado(request, ciclo_id):
     )
 
     linhas = []
-    tot_feitos = tot_itens = tot_atrasos = 0
+    tot_feitos = tot_itens = tot_atrasos = tot_aguardando = 0
     concluidas = em_andamento = pendentes = atrasadas = 0
     for p in processos:
         r = resumo_processo(p, fases, prazos, hoje)
@@ -97,6 +97,7 @@ def ciclo_consolidado(request, ciclo_id):
         tot_feitos += r["feitos"]
         tot_itens += r["total"]
         tot_atrasos += r["atrasos"]
+        tot_aguardando += r["aguardando"]
         sg = r["status_geral"]
         if sg == "Concluído":
             concluidas += 1
@@ -115,6 +116,7 @@ def ciclo_consolidado(request, ciclo_id):
         "atrasadas": atrasadas,
         "pendencias": tot_itens - tot_feitos,
         "atrasos": tot_atrasos,
+        "aguardando": tot_aguardando,
         "percentual": (tot_feitos / tot_itens) if tot_itens else 0.0,
     }
     return render(request, "fechamento/consolidado.html", {
@@ -203,7 +205,7 @@ def item_set(request, status_id):
     if request.POST.get("toggle") == "1" and s.status == novo:
         novo = _PEND
     s.status = novo
-    if novo == _DONE:
+    if novo in (_DONE, _AGUARDANDO):
         s.data = parse_date(request.POST.get("data") or "") or timezone.localdate()
     else:
         s.data = None

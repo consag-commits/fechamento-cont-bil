@@ -21,6 +21,7 @@
   {% include "fechamento/_stat.html" with rotulo="Em andamento" valor=resumo.em_andamento cor="primary" icone="hourglass-split" %}
   {% include "fechamento/_stat.html" with rotulo="Atrasadas" valor=resumo.atrasadas cor="danger" icone="exclamation-octagon-fill" %}
   {% include "fechamento/_stat.html" with rotulo="Pendências" valor=resumo.pendencias cor="warning" icone="list-task" %}
+  {% include "fechamento/_stat.html" with rotulo="Aguardando" valor=resumo.aguardando cor="warning" icone="hourglass-split" %}
   {% include "fechamento/_stat.html" with rotulo="Atrasos" valor=resumo.atrasos cor="danger" icone="clock-history" %}
 </div>
 

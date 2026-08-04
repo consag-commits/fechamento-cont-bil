@@ -21,7 +21,8 @@
     <div class="fs-5 fw-bold">{% widthratio resumo.percentual 1 100 %}%</div>
     <div class="small text-muted">
       {{ resumo.feitos }}/{{ resumo.total }}
-      {% if resumo.atrasos %}· <span class="text-danger">{{ resumo.atrasos }} atrasado{{ resumo.atrasos|pluralize }}</span>{% endif %}
+      {% if resumo.aguardando %}· <span class="text-warning">{{ resumo.aguardando }} aguardando</span>{% endif %}
+      {% if resumo.atrasos %}· <span class="text-danger">{{ resumo.atrasos }} atraso{{ resumo.atrasos|pluralize }}</span>{% endif %}
     </div>
   </div>
 </div>

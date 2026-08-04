@@ -47,12 +47,13 @@ def resumo_processo(processo, fases, prazos, hoje=None):
         por_fase.setdefault(s.item.fase_id, []).append(s)
 
     linhas_fase = []
-    g_total = g_feitos = g_atrasos = 0
+    g_total = g_feitos = g_atrasos = g_aguardando = 0
     for fase in fases:
         statuses = por_fase.get(fase.id, [])
         scored = [s for s in statuses if s.item.pontua and s.status != ItemStatus.Status.NA]
         feitos = [s for s in scored if s.concluido]
         pendentes = [s for s in scored if not s.concluido]
+        aguardando = [s for s in scored if s.status == ItemStatus.Status.AGUARDANDO]
         total = len(scored)
         deadline = prazos.get(fase.id)
         atrasada = bool(deadline) and hoje > deadline and len(pendentes) > 0
@@ -61,6 +62,7 @@ def resumo_processo(processo, fases, prazos, hoje=None):
             "total": total,
             "feitos": len(feitos),
             "pendentes": len(pendentes),
+            "aguardando": len(aguardando),
             "pct": (len(feitos) / total) if total else 0.0,
             "deadline": deadline,
             "atrasada": atrasada,
@@ -68,6 +70,7 @@ def resumo_processo(processo, fases, prazos, hoje=None):
         })
         g_total += total
         g_feitos += len(feitos)
+        g_aguardando += len(aguardando)
         if atrasada:
             g_atrasos += len(pendentes)
 
@@ -87,6 +90,7 @@ def resumo_processo(processo, fases, prazos, hoje=None):
         "feitos": g_feitos,
         "pendencias": g_pend,
         "atrasos": g_atrasos,
+        "aguardando": g_aguardando,
         "percentual": (g_feitos / g_total) if g_total else 0.0,
         "status_geral": status_geral,
     }
