@@ -162,9 +162,11 @@
         · {{ resumo.ciclos }} ciclo{{ resumo.ciclos|pluralize }} no histórico
       </div>
     </div>
+    {% if is_gestor %}
     <a href="{% url 'empresa_editar' empresa.id %}" class="btn btn-outline-primary rounded-pill px-4 fw-medium shadow-sm">
       <i class="bi bi-pencil me-1"></i> Editar dados
     </a>
+    {% endif %}
   </div>
 </div>
 
