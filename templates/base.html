@@ -21,6 +21,71 @@
     .btn-dark-action-danger { background-color: #1e293b; border: 1px solid #334155; color: #fca5a5; transition: all 0.2s ease; }
     .btn-dark-action-danger:hover { background-color: #7f1d1d; border-color: #991b1b; color: #fff; }
     .tracking-tight { letter-spacing: -0.025em; }
+
+    /* ── Busca rápida na navbar ── */
+    .search-wrapper { position: relative; }
+    .search-trigger {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #1e293b; border: 1px solid #334155; color: #94a3b8;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s ease; font-size: 15px;
+    }
+    .search-trigger:hover { background: #334155; color: #e2e8f0; }
+    .search-input-container {
+      position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      width: 0; opacity: 0; overflow: hidden;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    }
+    .search-wrapper.open .search-input-container {
+      width: 320px; opacity: 1;
+    }
+    .search-wrapper.open .search-trigger { display: none; }
+    .search-input {
+      width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+      border-radius: 50rem; border: 1px solid #334155;
+      background: #1e293b; color: #f1f5f9; font-size: 0.85rem;
+      outline: none; transition: border-color 0.2s ease;
+    }
+    .search-input::placeholder { color: #64748b; }
+    .search-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+    .search-input-icon {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      color: #64748b; font-size: 14px; pointer-events: none;
+    }
+    .search-results {
+      position: absolute; top: calc(100% + 6px); right: 0;
+      width: 360px; max-height: 340px; overflow-y: auto;
+      background: #fff; border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      z-index: 9999; display: none;
+    }
+    .search-results.visible { display: block; animation: fadeUp 0.2s ease forwards; }
+    .search-result-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem; text-decoration: none; color: #0f172a;
+      transition: background 0.15s ease; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.03);
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover, .search-result-item.active {
+      background: #f1f5f9; color: #0f172a;
+    }
+    .search-result-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #eff6ff; color: #3b82f6;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .search-result-name { font-size: 0.85rem; font-weight: 500; }
+    .search-result-empty {
+      padding: 1.5rem; text-align: center; color: #94a3b8; font-size: 0.8rem;
+    }
+    .search-result-loading {
+      padding: 1rem; text-align: center; color: #94a3b8; font-size: 0.8rem;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
@@ -55,6 +120,17 @@
         </div>
         
         <div class="d-flex gap-2 ms-2 ps-3" style="border-left: 1px solid #334155;">
+          {# ── Busca rápida de empresas ── #}
+          <div class="search-wrapper" id="empresa-search">
+            <button class="search-trigger" id="search-btn" title="Buscar empresa" type="button">
+              <i class="bi bi-search"></i>
+            </button>
+            <div class="search-input-container">
+              <i class="bi bi-search search-input-icon"></i>
+              <input type="text" class="search-input" id="search-input" placeholder="Buscar empresa..." autocomplete="off">
+            </div>
+            <div class="search-results" id="search-results"></div>
+          </div>
           {% if user.is_superuser %}
           <a class="btn btn-sm rounded-pill text-light fw-semibold px-3 shadow-sm btn-dark-action" href="{% url 'admin:index' %}"><i class="bi bi-shield-lock me-1 text-primary"></i> Admin</a>
           {% endif %}
@@ -83,5 +159,116 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://unpkg.com/htmx.org@2.0.3"></script>
   {% block extra_js %}{% endblock %}
+
+  {# ── JS da busca rápida de empresas ── #}
+  {% if user.is_authenticated %}
+  <script>
+  (function () {
+    var wrapper = document.getElementById('empresa-search');
+    var btn = document.getElementById('search-btn');
+    var input = document.getElementById('search-input');
+    var results = document.getElementById('search-results');
+    if (!wrapper || !btn || !input || !results) return;
+
+    var timer = null;
+    var activeIdx = -1;
+    var items = [];
+
+    btn.addEventListener('click', function () {
+      wrapper.classList.add('open');
+      setTimeout(function () { input.focus(); }, 100);
+    });
+
+    function closeSearch() {
+      wrapper.classList.remove('open');
+      results.classList.remove('visible');
+      input.value = '';
+      activeIdx = -1;
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!wrapper.contains(e.target)) closeSearch();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeSearch();
+      // Ctrl+K / Cmd+K para abrir
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        wrapper.classList.add('open');
+        setTimeout(function () { input.focus(); }, 100);
+      }
+    });
+
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      var q = input.value.trim();
+      if (q.length < 2) {
+        results.classList.remove('visible');
+        return;
+      }
+      results.innerHTML = '<div class="search-result-loading"><i class="bi bi-arrow-repeat"></i> Buscando...</div>';
+      results.classList.add('visible');
+      timer = setTimeout(function () { doSearch(q); }, 250);
+    });
+
+    function doSearch(q) {
+      fetch('{% url "empresas_buscar_json" %}?q=' + encodeURIComponent(q))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          activeIdx = -1;
+          if (!data.length) {
+            results.innerHTML = '<div class="search-result-empty"><i class="bi bi-building-x d-block mb-1" style="font-size: 1.2rem;"></i>Nenhuma empresa encontrada</div>';
+            items = [];
+            return;
+          }
+          var html = '';
+          data.forEach(function (e, i) {
+            html += '<a href="' + e.url + '" class="search-result-item" data-idx="' + i + '">' +
+              '<div class="search-result-icon"><i class="bi bi-building"></i></div>' +
+              '<span class="search-result-name">' + escapeHtml(e.nome) + '</span>' +
+              '</a>';
+          });
+          results.innerHTML = html;
+          items = results.querySelectorAll('.search-result-item');
+        })
+        .catch(function () {
+          results.innerHTML = '<div class="search-result-empty">Erro ao buscar</div>';
+        });
+    }
+
+    input.addEventListener('keydown', function (e) {
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = Math.min(activeIdx + 1, items.length - 1);
+        updateActive();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = Math.max(activeIdx - 1, 0);
+        updateActive();
+      } else if (e.key === 'Enter' && activeIdx >= 0) {
+        e.preventDefault();
+        items[activeIdx].click();
+      }
+    });
+
+    function updateActive() {
+      items.forEach(function (el, i) {
+        el.classList.toggle('active', i === activeIdx);
+      });
+      if (activeIdx >= 0 && items[activeIdx]) {
+        items[activeIdx].scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function escapeHtml(str) {
+      var d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+  })();
+  </script>
+  {% endif %}
 </body>
 </html>

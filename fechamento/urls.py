@@ -62,6 +62,8 @@ urlpatterns = [
     path("gestao/empresas/<int:empresa_id>/editar/", views.empresa_editar, name="empresa_editar"),
     path("gestao/empresas/<int:empresa_id>/ativa/", views.empresa_toggle_ativa, name="empresa_toggle_ativa"),
     path("gestao/empresas/<int:empresa_id>/equipe/", views.empresa_set_equipe, name="empresa_set_equipe"),
+    path("gestao/empresas/<int:empresa_id>/visao-geral/", views.empresa_visao_geral, name="empresa_visao_geral"),
+    path("api/empresas/buscar/", views.empresas_buscar_json, name="empresas_buscar_json"),
 
     # Configuração de ciclos
     path("gestao/ciclos/", views.ciclos_list, name="ciclos_list"),

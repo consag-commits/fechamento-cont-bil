@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+{% load fechamento_extras %}
+
+{% block title %}{{ empresa.razao_social }} — Visão geral{% endblock %}
+
+{% block extra_css %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  
+  :root {
+    --bento-bg: #f8fafc;
+    --bento-card-bg: #ffffff;
+    --bento-border: rgba(0,0,0,0.04);
+    --bento-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
+    --bento-radius: 20px;
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    background-color: var(--bento-bg);
+    font-family: var(--font-family);
+  }
+
+  .kpi-card {
+    background: var(--bento-card-bg);
+    border: 1px solid var(--bento-border);
+    border-radius: var(--bento-radius);
+    padding: 1.5rem;
+    height: 100%;
+    box-shadow: var(--bento-shadow);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .kpi-card:hover { 
+    transform: translateY(-4px); 
+    box-shadow: 0 12px 32px rgba(0,0,0,0.06); 
+  }
+  .kpi-rotulo {
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; color: #64748b;
+  }
+  .kpi-valor { font-size: 2.25rem; font-weight: 700; line-height: 1.1; color: #0f172a; letter-spacing: -0.5px; }
+  .kpi-nota { font-size: 0.85rem; color: #64748b; font-weight: 400; }
+  .kpi-icone {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+  }
+  
+  /* Células de fase com cores pastéis */
+  .celula-fase {
+    display: inline-block; min-width: 52px; padding: 0.25rem 0.6rem;
+    border-radius: 50rem; font-size: 0.75rem; font-weight: 600;
+  }
+  .fase-ok      { background: #ecfdf5; color: #065f46; border: 1px solid #d1fae5; }
+  .fase-atraso  { background: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; }
+  .fase-andando { background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe; }
+  .fase-zero    { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+  /* Animações (Staggered Fade-Up) */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    opacity: 0;
+    animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .delay-1 { animation-delay: 0.05s; }
+  .delay-2 { animation-delay: 0.1s; }
+  .delay-3 { animation-delay: 0.15s; }
+  .delay-4 { animation-delay: 0.2s; }
+  .delay-5 { animation-delay: 0.25s; }
+
+  /* Ajustes extras pro Bento */
+  .bento-card {
+    background: var(--bento-card-bg);
+    border: 1px solid var(--bento-border);
+    border-radius: var(--bento-radius);
+    box-shadow: var(--bento-shadow);
+  }
+  
+  /* Ajuste de tipografia global */
+  h1, h2, h3, h4, h5, h6, .fw-bold { font-family: var(--font-family); letter-spacing: -0.02em; }
+  
+  /* Tabela mais limpa */
+  .table > :not(caption) > * > * {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-bottom-color: rgba(0,0,0,0.03);
+  }
+
+  /* ── CEIPIM badges ── */
+  .ceipim-status {
+    display: inline-block; min-width: 64px; padding: 0.3rem 0.6rem;
+    border-radius: 8px; font-size: 0.7rem; font-weight: 600;
+    text-align: center; letter-spacing: 0.3px;
+  }
+  .ceipim-na         { background: #f8fafc; color: #94a3b8; border: 1px solid #e2e8f0; }
+  .ceipim-previa     { background: #fefce8; color: #854d0e; border: 1px solid #fef08a; }
+  .ceipim-retificado { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .ceipim-definitivo { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+
+  /* ── Lucro Real badges ── */
+  .lr-status {
+    display: inline-block; min-width: 76px; padding: 0.3rem 0.6rem;
+    border-radius: 8px; font-size: 0.7rem; font-weight: 600;
+    text-align: center; letter-spacing: 0.3px;
+  }
+  .lr-pendente  { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .lr-andamento { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .lr-concluido { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+  .lr-na        { background: #f8fafc; color: #94a3b8; border: 1px solid #e2e8f0; }
+
+  .lr-apuracao {
+    display: inline-block; padding: 0.3rem 0.65rem;
+    border-radius: 8px; font-size: 0.7rem; font-weight: 600;
+    background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;
+  }
+
+  /* Seção side-by-side */
+  .section-title-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{% url 'gestao_home' %}">Gestão</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'empresas_list' %}">Empresas</a></li>
+    <li class="breadcrumb-item active">{{ empresa.razao_social }}</li>
+  </ol>
+</nav>
+
+{# ── Cabeçalho ── #}
+<div class="bento-card mb-4 animate-fade-up delay-1">
+  <div class="card-body d-flex align-items-center gap-3 flex-wrap p-4">
+    <div class="rounded-circle bg-primary bg-gradient text-white shadow-sm d-flex align-items-center justify-content-center flex-shrink-0"
+         style="width: 56px; height: 56px; font-size: 22px;">
+      <i class="bi bi-building"></i>
+    </div>
+    <div class="flex-grow-1" style="min-width: 0;">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h4 class="mb-0 fw-bold text-dark">{{ empresa.razao_social }}</h4>
+        {% if empresa.ativa %}
+          <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">Ativa</span>
+        {% else %}
+          <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">Inativa</span>
+        {% endif %}
+      </div>
+      <div class="text-secondary small mt-1 fw-medium">
+        {{ empresa.cnpj|default:"CNPJ não informado" }}
+        · Equipe padrão: {{ empresa.equipe.nome|default:"sem equipe" }}
+        · {{ resumo.ciclos }} ciclo{{ resumo.ciclos|pluralize }} no histórico
+      </div>
+    </div>
+    <a href="{% url 'empresa_editar' empresa.id %}" class="btn btn-outline-primary rounded-pill px-4 fw-medium shadow-sm">
+      <i class="bi bi-pencil me-1"></i> Editar dados
+    </a>
+  </div>
+</div>
+
+{% if linhas %}
+{# ── 1. Veredito gerencial ── #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3 animate-fade-up delay-2">
+    <div class="kpi-card">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="kpi-icone bg-primary-subtle text-primary"><i class="bi bi-check2-circle"></i></div>
+        <div class="kpi-rotulo">Conclusão média</div>
+      </div>
+      <div class="kpi-valor">{% widthratio resumo.percentual 1 100 %}%</div>
+      <div class="kpi-nota mt-1">
+        {% if resumo.diferenca_pp > 0 %}
+          <span class="text-success fw-semibold"><i class="bi bi-arrow-up"></i> {{ resumo.diferenca_pp }} p.p.</span> acima da média
+        {% elif resumo.diferenca_pp < 0 %}
+          <span class="text-danger fw-semibold"><i class="bi bi-arrow-down"></i> {{ resumo.diferenca_pp }} p.p.</span> abaixo da média
+        {% else %}
+          Na média geral
+        {% endif %}
+        <span class="text-black-50">({% widthratio resumo.media_geral 1 100 %}%)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3 animate-fade-up delay-3">
+    <div class="kpi-card">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="kpi-icone bg-success-subtle text-success"><i class="bi bi-calendar-check"></i></div>
+        <div class="kpi-rotulo">Pontualidade</div>
+      </div>
+      <div class="kpi-valor">{% widthratio resumo.pontualidade 1 100 %}%</div>
+      <div class="kpi-nota mt-1">
+        {{ resumo.ciclos_sem_atraso }} de {{ resumo.ciclos }} ciclo{{ resumo.ciclos|pluralize }} sem atraso
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3 animate-fade-up delay-4">
+    <div class="kpi-card">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="kpi-icone bg-{{ resumo.tendencia.cor }}-subtle text-{{ resumo.tendencia.cor }}">
+          <i class="bi bi-{{ resumo.tendencia.icone }}"></i>
+        </div>
+        <div class="kpi-rotulo">Tendência</div>
+      </div>
+      <div class="fs-4 fw-bold text-{{ resumo.tendencia.cor }}">{{ resumo.tendencia.rotulo }}</div>
+      <div class="kpi-nota mt-1">
+        {% if resumo.tendencia.delta_pp != None %}
+          {{ resumo.tendencia.delta_pp }} p.p. entre o início e o fim do período
+        {% else %}
+          Precisa de mais de um ciclo para comparar
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3 animate-fade-up delay-5">
+    <div class="kpi-card">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="kpi-icone {% if resumo.fase_critica %}bg-danger-subtle text-danger{% else %}bg-success-subtle text-success{% endif %}">
+          <i class="bi bi-{% if resumo.fase_critica %}exclamation-triangle{% else %}shield-check{% endif %}"></i>
+        </div>
+        <div class="kpi-rotulo">Ponto de atenção</div>
+      </div>
+      {% if resumo.fase_critica %}
+        <div class="fs-5 fw-bold text-dark">{{ resumo.fase_critica.nome }}</div>
+        <div class="kpi-nota mt-1">
+          Atrasou em {{ resumo.fase_critica.ciclos }} ciclo{{ resumo.fase_critica.ciclos|pluralize }}
+        </div>
+      {% else %}
+        <div class="fs-5 fw-bold text-success">Nenhum</div>
+        <div class="kpi-nota mt-1">Nenhuma fase com atraso registrado</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ── 2. Evolução ── #}
+{% if resumo.ciclos > 1 %}
+<div class="bento-card mb-4 animate-fade-up delay-5">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h6 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Evolução da conclusão</h6>
+      <span class="small text-secondary">
+        <span class="d-inline-block rounded-circle bg-primary" style="width:8px;height:8px;"></span> Esta empresa
+        <span class="d-inline-block rounded-circle bg-secondary ms-2 opacity-50" style="width:8px;height:8px;"></span> Média geral
+      </span>
+    </div>
+    <div style="height: 220px;"><canvas id="grafico-evolucao"></canvas></div>
+  </div>
+</div>
+{% endif %}
+
+{# ── 3. Evidência ── #}
+<div class="bento-card animate-fade-up delay-5">
+  <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-table me-2 text-secondary"></i>Histórico por ciclo</h6>
+    <div class="d-flex gap-1 flex-wrap small">
+      <span class="badge rounded-pill bg-success-subtle text-success">{{ resumo.concluidos }} concluído{{ resumo.concluidos|pluralize }}</span>
+      <span class="badge rounded-pill bg-primary-subtle text-primary">{{ resumo.em_andamento }} em andamento</span>
+      <span class="badge rounded-pill bg-danger-subtle text-danger">{{ resumo.atrasados }} atrasado{{ resumo.atrasados|pluralize }}</span>
+      <span class="badge rounded-pill bg-secondary-subtle text-secondary">{{ resumo.pendentes }} não iniciado{{ resumo.pendentes|pluralize }}</span>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="text-secondary small" style="background: rgba(0,0,0,0.02);">
+        <tr>
+          <th class="ps-4" style="min-width: 150px;">Competência</th>
+          <th>Equipe</th>
+          {% for nome in colunas %}<th class="text-center">{{ nome }}</th>{% endfor %}
+          <th class="text-center" style="min-width: 110px;">Geral</th>
+          <th class="text-center">Pend.</th>
+          <th class="text-center">Atr.</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in linhas %}
+        <tr>
+          <td class="ps-4">
+            <a href="{% url 'ciclo_consolidado' l.ciclo.id %}" class="fw-semibold text-dark text-decoration-none">
+              {{ l.ciclo.competencia_display }}
+            </a>
+            {% if l.ciclo.status == 'concluido' %}
+              <span class="badge rounded-pill bg-secondary-subtle text-secondary ms-1" style="font-size: .65rem;">Arquivado</span>
+            {% endif %}
+          </td>
+          <td class="text-muted small">{{ l.processo.equipe.nome|default:"—" }}</td>
+
+          {% for nome in colunas %}
+            {% with lf=l.por_fase|dictkey:nome %}
+            <td class="text-center">
+              {% if lf.total %}
+                <span class="celula-fase {% if lf.atrasada %}fase-atraso{% elif lf.pct >= 1 %}fase-ok{% elif lf.pct > 0 %}fase-andando{% else %}fase-zero{% endif %}"
+                      title="{{ lf.feitos }} de {{ lf.total }} — {{ lf.status }}">
+                  {% widthratio lf.pct 1 100 %}%
+                </span>
+              {% else %}
+                <span class="celula-fase fase-zero">N/A</span>
+              {% endif %}
+            </td>
+            {% endwith %}
+          {% endfor %}
+
+          <td class="text-center">
+            <div class="d-flex align-items-center gap-2 justify-content-center">
+              <span class="fw-semibold small" style="min-width: 32px;">{% widthratio l.resumo.percentual 1 100 %}%</span>
+              <div class="progress flex-grow-1" style="height: 5px; max-width: 50px;">
+                <div class="progress-bar {% if l.resumo.percentual == 1 %}bg-success{% else %}bg-primary{% endif %}"
+                     style="width: {% widthratio l.resumo.percentual 1 100 %}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td class="text-center fw-semibold small {% if l.resumo.pendencias == 0 %}text-black-50 fw-normal{% endif %}">{{ l.resumo.pendencias }}</td>
+          <td class="text-center fw-bold small {% if l.resumo.atrasos > 0 %}text-danger{% else %}text-black-50 fw-normal{% endif %}">{{ l.resumo.atrasos }}</td>
+          <td>
+            {% if l.resumo.status_geral == 'Concluído' %}<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill py-1 px-2"><i class="bi bi-check2"></i> {{ l.resumo.status_geral }}</span>
+            {% elif l.resumo.status_geral == 'Atrasado' %}<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill py-1 px-2"><i class="bi bi-exclamation-triangle"></i> {{ l.resumo.status_geral }}</span>
+            {% elif l.resumo.status_geral == 'Em andamento' %}<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill py-1 px-2"><i class="bi bi-arrow-repeat"></i> {{ l.resumo.status_geral }}</span>
+            {% else %}<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill py-1 px-2"><i class="bi bi-pause"></i> {{ l.resumo.status_geral }}</span>{% endif %}
+          </td>
+          <td class="text-end pe-4">
+            <a href="{% url 'processo_matriz' l.processo.id %}" class="btn btn-sm btn-outline-secondary rounded-pill py-1 px-3 text-nowrap">
+              <i class="bi bi-card-checklist me-1"></i> Checklist
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ── 4. CEIPIM / Indicadores ── #}
+{% if ceipim %}
+<div class="bento-card mt-4 animate-fade-up delay-5">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <div class="section-title-icon bg-warning-subtle text-warning">
+        <i class="bi bi-bar-chart-line"></i>
+      </div>
+      <div>
+        <h6 class="fw-bold text-dark mb-0">CEIPIM / Indicadores</h6>
+        <span class="small text-secondary">Status mensal — {{ ceipim.ano }}</span>
+      </div>
+      <a href="{% url 'indicadores_ceipim' %}?ano={{ ceipim.ano }}" class="btn btn-sm btn-outline-secondary rounded-pill ms-auto">
+        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir painel completo
+      </a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" style="table-layout: auto;">
+        <thead class="text-secondary small" style="background: rgba(0,0,0,0.02);">
+          <tr>
+            <th class="ps-3" style="min-width: 80px;">{{ ceipim.ano|add:"-1" }}</th>
+            {% for item in ceipim.meses %}
+              <th class="text-center">{{ item.mes|mes_abrev|title }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ps-3">
+              <span class="ceipim-status ceipim-{{ ceipim.anterior }}">{{ ceipim.status_dict|dictkey:ceipim.anterior }}</span>
+            </td>
+            {% for item in ceipim.meses %}
+              <td class="text-center">
+                <span class="ceipim-status ceipim-{{ item.status }}">{{ ceipim.status_dict|dictkey:item.status }}</span>
+              </td>
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ── 5. Lucro Real ── #}
+{% if lucro_real %}
+<div class="bento-card mt-4 animate-fade-up delay-5">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <div class="section-title-icon bg-info-subtle text-info">
+        <i class="bi bi-calculator"></i>
+      </div>
+      <div>
+        <h6 class="fw-bold text-dark mb-0">Lucro Real</h6>
+        <span class="small text-secondary">Acompanhamento — {{ lucro_real.ano }}</span>
+      </div>
+      <a href="{% url 'lucro_real' %}?ano={{ lucro_real.ano }}" class="btn btn-sm btn-outline-secondary rounded-pill ms-auto">
+        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir painel completo
+      </a>
+    </div>
+
+    <div class="row g-3">
+      {# Apuração #}
+      <div class="col-sm-6 col-lg-3">
+        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.015);">
+          <div class="small text-secondary fw-semibold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 0.5px;">Apuração</div>
+          <span class="lr-apuracao">{{ lucro_real.apuracao_label }}</span>
+        </div>
+      </div>
+
+      {# Trimestres ou Status Geral #}
+      {% if lucro_real.usa_trimestres %}
+        {% for tri in lucro_real.trimestres %}
+        <div class="col-sm-6 col-lg-2">
+          <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.015);">
+            <div class="small text-secondary fw-semibold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 0.5px;">{{ tri.numero }}º Trimestre</div>
+            <span class="lr-status lr-{{ tri.status }}">{{ tri.label }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="col-sm-6 col-lg-3">
+          <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.015);">
+            <div class="small text-secondary fw-semibold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 0.5px;">Situação geral</div>
+            <span class="lr-status lr-{{ lucro_real.status_geral }}">{{ lucro_real.status_geral_label }}</span>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    {# Linha com Atualizações e Previsão #}
+    {% if lucro_real.atualizacoes or lucro_real.previsao_entrega %}
+    <div class="row g-3 mt-1">
+      {% if lucro_real.atualizacoes %}
+      <div class="col-sm-8">
+        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.015);">
+          <div class="small text-secondary fw-semibold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 0.5px;">Atualizações</div>
+          <span class="small text-dark">{{ lucro_real.atualizacoes }}</span>
+        </div>
+      </div>
+      {% endif %}
+      {% if lucro_real.previsao_entrega %}
+      <div class="col-sm-4">
+        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.015);">
+          <div class="small text-secondary fw-semibold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 0.5px;">Previsão de entrega</div>
+          <span class="small fw-semibold text-dark"><i class="bi bi-calendar-event me-1"></i>{{ lucro_real.previsao_entrega|date:'d/m/Y' }}</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="bento-card animate-fade-up delay-5">
+  <div class="card-body text-center text-muted p-5">
+    <i class="bi bi-calendar-x fs-1 d-block mb-3 opacity-25"></i>
+    <h6 class="fw-bold text-dark">Sem histórico de ciclos</h6>
+    <p class="small mb-0">Esta empresa ainda não participou de nenhum ciclo de fechamento.</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if resumo.ciclos > 1 %}
+{{ grafico_labels|json_script:"dados-labels" }}
+{{ grafico_valores|json_script:"dados-valores" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById('grafico-evolucao');
+  // se o CDN falhar, a tabela abaixo continua sendo a fonte da verdade
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  var labels = JSON.parse(document.getElementById('dados-labels').textContent);
+  var valores = JSON.parse(document.getElementById('dados-valores').textContent);
+  var media = {% widthratio resumo.media_geral 1 100 %};
+
+  new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Conclusão',
+          data: valores,
+          borderColor: '#0d6efd',
+          backgroundColor: 'rgba(13,110,253,.08)',
+          borderWidth: 2,
+          fill: true,
+          tension: .3,
+          pointRadius: 4,
+          pointBackgroundColor: '#0d6efd'
+        },
+        {
+          label: 'Média geral',
+          data: labels.map(function () { return media; }),
+          borderColor: '#adb5bd',
+          borderWidth: 1.5,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : undefined,
+      scales: {
+        y: {
+          beginAtZero: true, max: 100,
+          ticks: { callback: function (v) { return v + '%'; }, font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: function (c) { return c.dataset.label + ': ' + c.parsed.y + '%'; } }
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

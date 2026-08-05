@@ -43,7 +43,9 @@
         {% for e in empresas %}
         <tr>
           <td class="px-4 py-3">
-            <div class="fw-bold text-dark">{{ e.razao_social }}</div>
+            <a href="{% url 'empresa_visao_geral' e.id %}" class="fw-bold text-dark text-decoration-none stretched-link-hover">
+              {{ e.razao_social }}
+            </a>
             {% if e.cnpj %}<div class="text-muted small">{{ e.cnpj }}</div>{% endif %}
           </td>
           <td class="py-3">
@@ -59,7 +61,10 @@
             </select>
           </td>
           <td class="py-3">{% include "fechamento/gestao/_empresa_ativa.html" with e=e %}</td>
-          <td class="px-4 py-3 text-end">
+          <td class="px-4 py-3 text-end text-nowrap">
+            <a href="{% url 'empresa_visao_geral' e.id %}" class="btn btn-sm btn-light text-secondary rounded-pill px-3 shadow-sm fw-semibold">
+              <i class="bi bi-graph-up-arrow me-1"></i>Visão geral
+            </a>
             <a href="{% url 'empresa_editar' e.id %}" class="btn btn-sm btn-light text-primary rounded-pill px-3 shadow-sm fw-semibold">Editar</a>
           </td>
         </tr>

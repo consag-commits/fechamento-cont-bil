@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -464,6 +464,194 @@ def empresa_set_equipe(request, empresa_id):
     empresa.equipe_id = int(equipe_id) if equipe_id else None
     empresa.save(update_fields=["equipe"])
     return HttpResponse(status=204)
+
+
+@login_required
+def empresas_buscar_json(request):
+    """API JSON para o campo de busca rápida de empresas na navbar.
+    Retorna [{id, nome, url}] filtrado pelo parâmetro ?q=."""
+    q = request.GET.get("q", "").strip()
+    if len(q) < 2:
+        return JsonResponse([], safe=False)
+    empresas = (
+        Empresa.objects.filter(ativa=True, razao_social__icontains=q)
+        .order_by("razao_social")[:10]
+    )
+    resultados = [
+        {
+            "id": e.id,
+            "nome": e.razao_social,
+            "url": reverse("empresa_visao_geral", args=[e.id]),
+        }
+        for e in empresas
+    ]
+    return JsonResponse(resultados, safe=False)
+
+
+@gestor_required
+def empresa_visao_geral(request, empresa_id):
+    """Histórico de uma empresa ao longo dos ciclos — a transposta do consolidado
+    (lá é um ciclo com N empresas; aqui é uma empresa com N ciclos)."""
+    empresa = get_object_or_404(Empresa.objects.select_related("equipe"), pk=empresa_id)
+    hoje = timezone.localdate()
+    processos = (
+        empresa.processos
+        .select_related("ciclo__modelo", "equipe")
+        .prefetch_related("itens_status__item__fase", "ciclo__prazos")
+        .order_by("-ciclo__data_referencia")
+    )
+
+    fases_por_modelo = {}   # evita repetir a query de fases a cada ciclo
+    colunas, vistas = [], set()
+    linhas = []
+    for p in processos:
+        modelo_id = p.ciclo.modelo_id
+        if modelo_id not in fases_por_modelo:
+            fases_por_modelo[modelo_id] = list(
+                Fase.objects.filter(modelo_id=modelo_id, principal=True).order_by("ordem")
+            )
+        fases = fases_por_modelo[modelo_id]
+        for f in fases:
+            if f.nome not in vistas:
+                vistas.add(f.nome)
+                colunas.append(f.nome)
+
+        resumo = resumo_processo(p, fases, p.ciclo.prazos_dict(), hoje)
+        linhas.append({
+            "processo": p,
+            "ciclo": p.ciclo,
+            "resumo": resumo,
+            # indexado por nome para as colunas alinharem entre ciclos de modelos diferentes
+            "por_fase": {lf["fase"].nome: lf for lf in resumo["fases"]},
+        })
+
+    tot_feitos = tot_itens = 0
+    contagem = {"Concluído": 0, "Em andamento": 0, "Atrasado": 0, "Pendente de início": 0}
+    pendencias = atrasos = sem_atraso = 0
+    atrasos_por_fase = {}
+    for linha in linhas:
+        r = linha["resumo"]
+        tot_feitos += r["feitos"]
+        tot_itens += r["total"]
+        pendencias += r["pendencias"]
+        atrasos += r["atrasos"]
+        contagem[r["status_geral"]] = contagem.get(r["status_geral"], 0) + 1
+        if r["atrasos"] == 0:
+            sem_atraso += 1
+        for lf in r["fases"]:
+            if lf["atrasada"]:
+                atrasos_por_fase[lf["fase"].nome] = atrasos_por_fase.get(lf["fase"].nome, 0) + 1
+
+    percentual = (tot_feitos / tot_itens) if tot_itens else 0.0
+
+    # Benchmark: mesma regra de resumo_processo (só itens que pontuam, sem N/A)
+    agregado = (
+        ItemStatus.objects.filter(item__pontua=True)
+        .exclude(status=ItemStatus.Status.NA)
+        .aggregate(
+            total=Count("id"),
+            feitos=Count("id", filter=Q(status__in=ItemStatus.CONCLUIDOS)),
+        )
+    )
+    media_geral = (agregado["feitos"] / agregado["total"]) if agregado["total"] else 0.0
+
+    # Tendência: metade mais recente comparada à mais antiga (precisa de 2+ ciclos)
+    cronologico = list(reversed(linhas))
+    pcts = [l["resumo"]["percentual"] for l in cronologico]
+    if len(pcts) >= 4:
+        corte = len(pcts) // 2
+        delta = (sum(pcts[corte:]) / len(pcts[corte:])) - (sum(pcts[:corte]) / corte)
+    elif len(pcts) >= 2:
+        delta = pcts[-1] - pcts[0]
+    else:
+        delta = None
+
+    if delta is None:
+        tendencia = {"rotulo": "Histórico insuficiente", "cor": "secondary", "icone": "dash"}
+    elif delta > 0.05:
+        tendencia = {"rotulo": "Melhorando", "cor": "success", "icone": "arrow-up-right"}
+    elif delta < -0.05:
+        tendencia = {"rotulo": "Piorando", "cor": "danger", "icone": "arrow-down-right"}
+    else:
+        tendencia = {"rotulo": "Estável", "cor": "secondary", "icone": "arrow-right"}
+    tendencia["delta_pp"] = round(delta * 100) if delta is not None else None
+
+    fase_critica = max(atrasos_por_fase.items(), key=lambda kv: kv[1]) if atrasos_por_fase else None
+
+    resumo_geral = {
+        "ciclos": len(linhas),
+        "concluidos": contagem["Concluído"],
+        "em_andamento": contagem["Em andamento"],
+        "atrasados": contagem["Atrasado"],
+        "pendentes": contagem["Pendente de início"],
+        "pendencias": pendencias,
+        "atrasos": atrasos,
+        "percentual": percentual,
+        "pontualidade": (sem_atraso / len(linhas)) if linhas else 0.0,
+        "ciclos_sem_atraso": sem_atraso,
+        "media_geral": media_geral,
+        "diferenca_pp": round((percentual - media_geral) * 100),
+        "tendencia": tendencia,
+        "fase_critica": {"nome": fase_critica[0], "ciclos": fase_critica[1]} if fase_critica else None,
+    }
+
+    # ── CEIPIM / Indicadores ──
+    ceipim_data = None
+    if empresa.participa_ceipim:
+        ano_atual = hoje.year
+        indicadores = IndicadorCeipim.objects.filter(
+            empresa=empresa, ano__in=[ano_atual - 1, ano_atual],
+        )
+        lookup = {(i.ano, i.mes): i.status for i in indicadores}
+        ceipim_data = {
+            "ano": ano_atual,
+            "anterior": lookup.get((ano_atual - 1, 0), IndicadorCeipim.Status.NA),
+            "meses": [
+                {"mes": m, "status": lookup.get((ano_atual, m), IndicadorCeipim.Status.NA)}
+                for m in range(1, 13)
+            ],
+            "status_dict": dict(IndicadorCeipim.Status.choices),
+        }
+
+    # ── Lucro Real ──
+    lucro_real_data = None
+    if empresa.participa_lucro_real:
+        ano_atual = hoje.year
+        try:
+            lr = AcompanhamentoLucroReal.objects.get(empresa=empresa, ano=ano_atual)
+        except AcompanhamentoLucroReal.DoesNotExist:
+            lr = None
+        if lr:
+            trimestre_dict = dict(AcompanhamentoLucroReal.StatusTrimestre.choices)
+            apuracao_dict = dict(AcompanhamentoLucroReal.Apuracao.choices)
+            usa_trimestres = lr.apuracao in ("mensal", "trimestral", "receita_bruta") and lr.apuracao != "na"
+            lucro_real_data = {
+                "ano": ano_atual,
+                "apuracao": lr.apuracao,
+                "apuracao_label": apuracao_dict.get(lr.apuracao, lr.apuracao),
+                "usa_trimestres": usa_trimestres,
+                "trimestres": [
+                    {"numero": n, "status": getattr(lr, f"status_t{n}"),
+                     "label": trimestre_dict.get(getattr(lr, f"status_t{n}"), "")}
+                    for n in range(1, 5)
+                ],
+                "status_geral": lr.status_geral,
+                "status_geral_label": trimestre_dict.get(lr.status_geral, lr.status_geral),
+                "atualizacoes": lr.atualizacoes,
+                "previsao_entrega": lr.previsao_entrega,
+            }
+
+    return render(request, "fechamento/gestao/empresa_visao_geral.html", {
+        "empresa": empresa,
+        "colunas": colunas,
+        "linhas": linhas,
+        "resumo": resumo_geral,
+        "ceipim": ceipim_data,
+        "lucro_real": lucro_real_data,
+        # série cronológica para o gráfico de tendência
+        "grafico_labels": [l["ciclo"].competencia_display for l in cronologico],
+        "grafico_valores": [round(l["resumo"]["percentual"] * 100) for l in cronologico],
+    })
 
 
 @gestor_required
