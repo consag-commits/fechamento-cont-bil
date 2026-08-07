@@ -128,6 +128,23 @@
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 0.5rem;
   }
+
+  /* ── Badges de etapa (histórico por item) ── */
+  .etapa-badge {
+    display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
+    border-radius: 50%; font-size: 0.8rem; flex-shrink: 0;
+  }
+  .etapa-feito      { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+  .etapa-manual      { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; }
+  .etapa-pendente    { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .etapa-aguardando  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .etapa-na          { background: #f8fafc; color: #94a3b8; border: 1px solid #e2e8f0; }
+  .etapa-vazio       { color: #cbd5e1; font-weight: 400; }
+
+  /* Linha de cabeçalho de fase na tabela de etapas */
+  .fase-header-row td {
+    border-bottom: 2px solid #dbeafe !important;
+  }
 </style>
 {% endblock %}
 
@@ -234,13 +251,11 @@
         <div class="kpi-rotulo">Ponto de atenção</div>
       </div>
       {% if resumo.fase_critica %}
-        <div class="fs-5 fw-bold text-dark">{{ resumo.fase_critica.nome }}</div>
-        <div class="kpi-nota mt-1">
-          Atrasou em {{ resumo.fase_critica.ciclos }} ciclo{{ resumo.fase_critica.ciclos|pluralize }}
-        </div>
+        <div class="kpi-valor">{{ resumo.fase_critica.ciclos }}<span class="fs-6 text-muted ms-1">ciclos</span></div>
+        <div class="kpi-nota mt-1">atrasado(s) em {{ resumo.fase_critica.nome }}</div>
       {% else %}
-        <div class="fs-5 fw-bold text-success">Nenhum</div>
-        <div class="kpi-nota mt-1">Nenhuma fase com atraso registrado</div>
+        <div class="kpi-valor text-muted fs-4">Nenhum</div>
+        <div class="kpi-nota mt-1">sem atrasos críticos</div>
       {% endif %}
     </div>
   </div>
@@ -279,12 +294,15 @@
         <tr>
           <th class="ps-4" style="min-width: 150px;">Competência</th>
           <th>Equipe</th>
-          {% for nome in colunas %}<th class="text-center">{{ nome }}</th>{% endfor %}
+          {% for nome in colunas %}<th class="text-center" style="border-right: 1px dashed #dee2e6;">{{ nome }}</th>{% endfor %}
+          {% for card in etapas_cards %}
+            <th class="text-center small px-2 text-muted" style="border-right: 1px dashed #dee2e6;">{{ card.nome }}</th>
+          {% endfor %}
           <th class="text-center" style="min-width: 110px;">Geral</th>
           <th class="text-center">Pend.</th>
           <th class="text-center">Atr.</th>
           <th>Status</th>
-          <th></th>
+          <th class="text-center">Checklist</th>
         </tr>
       </thead>
       <tbody>
@@ -302,7 +320,7 @@
 
           {% for nome in colunas %}
             {% with lf=l.por_fase|dictkey:nome %}
-            <td class="text-center">
+            <td class="text-center" style="border-right: 1px dashed #dee2e6;">
               {% if lf.total %}
                 <span class="celula-fase {% if lf.atrasada %}fase-atraso{% elif lf.pct >= 1 %}fase-ok{% elif lf.pct > 0 %}fase-andando{% else %}fase-zero{% endif %}"
                       title="{{ lf.feitos }} de {{ lf.total }} — {{ lf.status }}">
@@ -313,6 +331,21 @@
               {% endif %}
             </td>
             {% endwith %}
+          {% endfor %}
+
+          {% for card in etapas_cards %}
+            <td class="text-center px-1" style="border-right: 1px dashed #dee2e6;">
+              {% with et=l.por_etapa|dictkey:card.nome %}
+                {% if et.total %}
+                  <span class="celula-fase {% if et.pct >= 1 %}fase-ok{% elif et.pct > 0 %}fase-andando{% else %}fase-zero{% endif %}"
+                        title="{{ et.feitos }} de {{ et.total }} concluídos">
+                    {% widthratio et.pct 1 100 %}%
+                  </span>
+                {% else %}
+                  <span class="celula-fase fase-zero" title="Nenhum item avaliado">—</span>
+                {% endif %}
+              {% endwith %}
+            </td>
           {% endfor %}
 
           <td class="text-center">

@@ -504,6 +504,10 @@ def empresa_visao_geral(request, empresa_id):
     fases_por_modelo = {}   # evita repetir a query de fases a cada ciclo
     colunas, vistas = [], set()
     linhas = []
+
+    todas_etapas_list = []
+    etapas_vistas = set()
+
     for p in processos:
         modelo_id = p.ciclo.modelo_id
         if modelo_id not in fases_por_modelo:
@@ -516,6 +520,35 @@ def empresa_visao_geral(request, empresa_id):
                 vistas.add(f.nome)
                 colunas.append(f.nome)
 
+        etapas_status_map = {}
+        for s in p.itens_status.all():
+            item = s.item
+            if not item.pontua:
+                continue
+                
+            if "—" not in item.nome:
+                continue
+                
+            etapa_nome = item.nome.split("—", 1)[0].strip()
+                
+            if etapa_nome not in etapas_vistas:
+                etapas_vistas.add(etapa_nome)
+                todas_etapas_list.append({
+                    "nome": etapa_nome,
+                    "fase_ordem": item.fase.ordem,
+                    "item_ordem": item.ordem
+                })
+                
+            if etapa_nome not in etapas_status_map:
+                etapas_status_map[etapa_nome] = {"feitos": 0, "total": 0}
+                
+            etapas_status_map[etapa_nome]["total"] += 1
+            if s.status in ItemStatus.CONCLUIDOS:
+                etapas_status_map[etapa_nome]["feitos"] += 1
+
+        for e_nome, vals in etapas_status_map.items():
+            vals["pct"] = vals["feitos"] / vals["total"] if vals["total"] > 0 else 0.0
+
         resumo = resumo_processo(p, fases, p.ciclo.prazos_dict(), hoje)
         linhas.append({
             "processo": p,
@@ -523,7 +556,11 @@ def empresa_visao_geral(request, empresa_id):
             "resumo": resumo,
             # indexado por nome para as colunas alinharem entre ciclos de modelos diferentes
             "por_fase": {lf["fase"].nome: lf for lf in resumo["fases"]},
+            "por_etapa": etapas_status_map,
         })
+
+    todas_etapas_list.sort(key=lambda x: (x["fase_ordem"], x["item_ordem"]))
+    todas_etapas_nomes = [x["nome"] for x in todas_etapas_list]
 
     tot_feitos = tot_itens = 0
     contagem = {"Concluído": 0, "Em andamento": 0, "Atrasado": 0, "Pendente de início": 0}
@@ -577,6 +614,23 @@ def empresa_visao_geral(request, empresa_id):
     tendencia["delta_pp"] = round(delta * 100) if delta is not None else None
 
     fase_critica = max(atrasos_por_fase.items(), key=lambda kv: kv[1]) if atrasos_por_fase else None
+
+    # ── Cards Gerenciais das Etapas (Sparklines) ──
+    etapas_cards = []
+    for nome in todas_etapas_nomes:
+        historico = []
+        for l in cronologico:
+            pct = l["por_etapa"][nome]["pct"] if nome in l["por_etapa"] else None
+            historico.append({
+                "ciclo_display": l["ciclo"].competencia_display,
+                "pct": pct
+            })
+        pct_atual = historico[-1]["pct"] if historico and historico[-1]["pct"] is not None else 0.0
+        etapas_cards.append({
+            "nome": nome,
+            "pct_atual": pct_atual,
+            "historico": historico
+        })
 
     resumo_geral = {
         "ciclos": len(linhas),
@@ -645,6 +699,7 @@ def empresa_visao_geral(request, empresa_id):
         "empresa": empresa,
         "colunas": colunas,
         "linhas": linhas,
+        "etapas_cards": etapas_cards,
         "resumo": resumo_geral,
         "ceipim": ceipim_data,
         "lucro_real": lucro_real_data,
