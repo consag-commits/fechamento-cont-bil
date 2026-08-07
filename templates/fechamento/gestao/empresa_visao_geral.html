@@ -294,10 +294,7 @@
         <tr>
           <th class="ps-4" style="min-width: 150px;">Competência</th>
           <th>Equipe</th>
-          {% for nome in colunas %}<th class="text-center" style="border-right: 1px dashed #dee2e6;">{{ nome }}</th>{% endfor %}
-          {% for card in etapas_cards %}
-            <th class="text-center small px-2 text-muted" style="border-right: 1px dashed #dee2e6;">{{ card.nome }}</th>
-          {% endfor %}
+          {% for nome in colunas %}<th class="text-center">{{ nome }}</th>{% endfor %}
           <th class="text-center" style="min-width: 110px;">Geral</th>
           <th class="text-center">Pend.</th>
           <th class="text-center">Atr.</th>
@@ -320,7 +317,7 @@
 
           {% for nome in colunas %}
             {% with lf=l.por_fase|dictkey:nome %}
-            <td class="text-center" style="border-right: 1px dashed #dee2e6;">
+            <td class="text-center">
               {% if lf.total %}
                 <span class="celula-fase {% if lf.atrasada %}fase-atraso{% elif lf.pct >= 1 %}fase-ok{% elif lf.pct > 0 %}fase-andando{% else %}fase-zero{% endif %}"
                       title="{{ lf.feitos }} de {{ lf.total }} — {{ lf.status }}">
@@ -331,21 +328,6 @@
               {% endif %}
             </td>
             {% endwith %}
-          {% endfor %}
-
-          {% for card in etapas_cards %}
-            <td class="text-center px-1" style="border-right: 1px dashed #dee2e6;">
-              {% with et=l.por_etapa|dictkey:card.nome %}
-                {% if et.total %}
-                  <span class="celula-fase {% if et.pct >= 1 %}fase-ok{% elif et.pct > 0 %}fase-andando{% else %}fase-zero{% endif %}"
-                        title="{{ et.feitos }} de {{ et.total }} concluídos">
-                    {% widthratio et.pct 1 100 %}%
-                  </span>
-                {% else %}
-                  <span class="celula-fase fase-zero" title="Nenhum item avaliado">—</span>
-                {% endif %}
-              {% endwith %}
-            </td>
           {% endfor %}
 
           <td class="text-center">
@@ -376,6 +358,53 @@
     </table>
   </div>
 </div>
+
+{# ── 3.5. Histórico por etapa (um nível abaixo das fases) ── #}
+{% if etapas %}
+<div class="bento-card mt-4 animate-fade-up delay-5">
+  <div class="card-header bg-transparent border-0 pt-4 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h6 class="fw-bold text-dark mb-0"><i class="bi bi-diagram-3 me-2 text-secondary"></i>Histórico por etapa</h6>
+      <span class="small text-secondary">% concluído de cada etapa, ciclo a ciclo</span>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="text-secondary small" style="background: rgba(0,0,0,0.02);">
+        <tr>
+          <th class="ps-4" style="min-width: 150px;">Competência</th>
+          {% for nome in etapas %}<th class="text-center">{{ nome }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in linhas %}
+        <tr>
+          <td class="ps-4">
+            <a href="{% url 'ciclo_consolidado' l.ciclo.id %}" class="fw-semibold text-dark text-decoration-none">
+              {{ l.ciclo.competencia_display }}
+            </a>
+          </td>
+          {% for nome in etapas %}
+            {% with et=l.por_etapa|dictkey:nome %}
+            <td class="text-center">
+              {% if et.total %}
+                <span class="celula-fase {% if et.pct >= 1 %}fase-ok{% elif et.pct > 0 %}fase-andando{% else %}fase-zero{% endif %}"
+                      title="{{ et.feitos }} de {{ et.total }} concluídos">
+                  {% widthratio et.pct 1 100 %}%
+                </span>
+              {% else %}
+                <span class="celula-fase fase-zero" title="Etapa não usada neste ciclo">—</span>
+              {% endif %}
+            </td>
+            {% endwith %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 
 {# ── 4. CEIPIM / Indicadores ── #}
 {% if ceipim %}

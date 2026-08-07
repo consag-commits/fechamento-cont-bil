@@ -615,23 +615,6 @@ def empresa_visao_geral(request, empresa_id):
 
     fase_critica = max(atrasos_por_fase.items(), key=lambda kv: kv[1]) if atrasos_por_fase else None
 
-    # ── Cards Gerenciais das Etapas (Sparklines) ──
-    etapas_cards = []
-    for nome in todas_etapas_nomes:
-        historico = []
-        for l in cronologico:
-            pct = l["por_etapa"][nome]["pct"] if nome in l["por_etapa"] else None
-            historico.append({
-                "ciclo_display": l["ciclo"].competencia_display,
-                "pct": pct
-            })
-        pct_atual = historico[-1]["pct"] if historico and historico[-1]["pct"] is not None else 0.0
-        etapas_cards.append({
-            "nome": nome,
-            "pct_atual": pct_atual,
-            "historico": historico
-        })
-
     resumo_geral = {
         "ciclos": len(linhas),
         "concluidos": contagem["Concluído"],
@@ -699,7 +682,7 @@ def empresa_visao_geral(request, empresa_id):
         "empresa": empresa,
         "colunas": colunas,
         "linhas": linhas,
-        "etapas_cards": etapas_cards,
+        "etapas": todas_etapas_nomes,
         "resumo": resumo_geral,
         "ceipim": ceipim_data,
         "lucro_real": lucro_real_data,
